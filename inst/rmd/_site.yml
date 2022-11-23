@@ -1,0 +1,23 @@
+name: "QC report"
+exclude: ["*.png", "*.Rdata","/output"]
+navbar:
+  title: "QC report"
+  left:
+    - text: "Results Menu"
+      menu:
+       - text: "Home"
+         href: index.html
+       - text: "1. Plate summary"
+         href: 1-plate-summary.html
+       - text: "2. Control plots"
+         href: 2-control-plots.html
+       - text: "3. Array intensities"
+         href: 3-qc.html
+       - text: "4. Beta distributions"
+         href: 4-beta-distributions.html
+       - text: "5. Signal to noise ratio"
+         href: 5-snr.html
+       - text: "6. Age-ic-smoking"
+         href: 6-age-ic-smk.html
+       - text: "7. Batch effects"
+         href: 7-batch.html

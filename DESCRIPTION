@@ -1,0 +1,14 @@
+Package: eutopsQC
+Title: EUTOPS preprocessing and quality control pipeline
+Version: 1.0
+Authors@R: 
+    person("Chiara", "Herzog", , "chiara.herzog@uibk.ac.at", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-1572-498X"))
+Description: Pipeline runs a combination of minfi, ENmix and ChAMP to preprocess methylation data and produces a QC report.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.1
+Depends: 
+    R (>= 2.10)
+LazyData: true

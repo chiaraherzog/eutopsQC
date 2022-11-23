@@ -1,0 +1,67 @@
+---
+title: "3. Array intensities"
+output:
+  html_document:
+    code_folding: "hide"
+    theme: simplex
+---
+
+```{r setup, include=FALSE}
+# rmarkdown::render_site()
+library(plotly)
+library(kableExtra)
+
+path <- log
+```
+
+## Plot of median intensities
+
+
+```{r,echo=FALSE,message=FALSE, warning = FALSE}
+input_dir_list <- dir(path)
+plates <- plates
+
+qc_merged <- NULL
+rm_samples <- NULL
+for(p in plates){
+   load(paste(path,'/',p,'_qc.Rdata',sep=''))
+   qc_merged <- rbind(qc_merged,qc)  
+   
+   load(paste(path,'/',p,'_log_data.Rdata',sep=''))
+   rm_samples <- c(rm_samples, log_data$rm_sample_list)
+}
+
+plot_ly(x=qc_merged[,1],y=qc_merged[,2],
+        mode = 'markers',
+        type='scatter',
+        text=rownames(qc_merged)) %>%
+   add_trace(x = c(0,20), y = c(0,20), 
+             mode = 'lines',
+             type='scatter',
+             line=list(color = 'black', dash='dash'),
+             inherit = FALSE) %>%
+   layout(yaxis = list(title = 'Unmethylated median indensity',
+                       range=c(4,20),
+                       showline=TRUE,
+                       mirror='ticks'),
+          xaxis = list(title = 'Methylated median indensity',
+                       range=c(4,20),
+                       showline=TRUE,
+                       mirror='ticks'),
+          showlegend=FALSE) %>%
+   config(displayModeBar = FALSE)
+```
+
+## List of removed samples
+
+* Any samples below 9.5 median intensity
+* Samples flagged by lab team
+
+```{r}
+ind <- match(rm_samples[!is.na(rm_samples)],rownames(qc_merged))
+
+if (length(ind)>0){
+   kable(qc_merged[ind,])%>%
+  kable_styling(bootstrap_options = c("striped", "hover"))   
+}
+```

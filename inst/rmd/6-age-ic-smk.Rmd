@@ -1,0 +1,126 @@
+---
+title: "6. ic - age - smoking"
+output:
+  html_document:
+    code_folding: "hide"
+    theme: simplex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+library(plotly)
+library(EpiDISH)
+library(WIDclocks)
+```
+
+# ic
+
+```{r fig.align = "center", fig.width = 6, fig.height = 4.5}
+if(any(grepl("_BC11", rownames(beta_merged)))){
+  
+  print("Mouse array - to be defined")
+  
+} else {
+  out <- epidish(beta.m = beta_merged,
+                 ref.m = centEpiFibIC.m,
+                 method = "RPC")$estF
+  
+  plot <- out %>%
+    as.data.frame() %>%
+    tibble::rownames_to_column("basename") %>%
+    ggplot(aes(x = basename,
+               y = IC,
+               colour = basename)) +
+    geom_point() +
+    ylim(0, 1) +
+    theme(legend.position = "none")
+  
+  ggplotly(plot)
+}
+```
+
+# age
+
+```{r fig.align = "center", fig.width = 6, fig.height = 4.5}
+if(any(grepl("_BC11", rownames(beta_merged)))){
+  
+  print("Mouse array - to be defined")
+  
+} else {
+
+  source("~/Dropbox/src/DNAm-tools/age_index.R")
+  
+  if(exists("pheno") && any(colnames(pheno) == "age")){
+    intersect <- intersect(colnames(beta_merged), pheno$basename)
+    pheno <- pheno[match(intersect, pheno$basename),]
+    beta_merged <- beta_merged[,match(intersect, colnames(beta_merged))]
+    pheno$index <- WID_clocks(beta_merged)$WID_general_clock 
+    plot <- pheno %>%
+      ggplot(aes(x = age,
+                 y = index,
+               colour = basename)) +
+      geom_point() +
+      xlim(0, 90) + ylim(0, 90) +
+      xlab("WID-general age")
+    
+    ggplotly(plot)
+  } else {
+    widage <- WID_clocks(beta_merged)$WID_general_clock 
+    
+    tmp <- data.frame(age = widage, 
+               basename = names(widage))
+    
+    plot <- tmp %>%
+      ggplot(aes(x = as.factor(basename),
+                 y = age,
+                 colour = as.factor(basename))) +
+      geom_point() +
+      theme(legend.position = "none") +
+      xlab("") + ylim(0, 90)
+    
+    ggplotly(plot)
+  }
+}
+
+```
+
+# smoking cpg
+
+```{r fig.align = "center", fig.width = 5.5, fig.height = 4.5}
+if(any(grepl("_BC11", rownames(beta_merged)))){
+  
+  print("Mouse array - NA")
+  
+} else {
+    if(exists("pheno") && any(colnames(pheno) == "smoking") && "cg16867657" %in% rownames(beta_merged)){
+    intersect <- intersect(colnames(beta_merged), pheno$basename)
+    pheno <- pheno[match(intersect, pheno$basename),]
+    beta_merged <- beta_merged[,match(intersect, colnames(beta_merged))]
+    pheno$index <- as.numeric(beta_merged["cg16867657",])
+    plot <- pheno %>%
+      ggplot(aes(x = smoking,
+                 y = index,
+               colour = basename)) +
+      geom_point() +
+      ylab("cg16867657 methylation")
+    
+    ggplotly(plot)
+  } else {
+    tmp <- data.frame(smk = as.numeric(beta_merged["cg16867657",]), 
+               basename = colnames(beta_merged))
+    
+    plot <- tmp %>%
+      ggplot(aes(x = as.factor(basename),
+                 y = smk,
+                 colour = as.factor(basename))) +
+      geom_point() +
+      theme(legend.position = "none") +
+      xlab("") +
+      ylab("cg16867657 methylation")
+    
+    ggplotly(plot)
+  }
+}
+```
+

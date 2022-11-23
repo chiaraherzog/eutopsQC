@@ -1,0 +1,63 @@
+---
+title: "1. Plate summary"
+output:
+  html_document:
+    code_folding: "hide"
+    theme: simplex
+---
+
+```{r setup, include=FALSE}
+# rmarkdown::render_site()
+knitr::opts_chunk$set(echo = FALSE)
+library(kableExtra)
+
+path <- log
+```
+
+
+```{r}
+# Scan for plates in PATH
+input_dir_list <- dir(path)
+plates <- plates
+
+# Construct data frame
+n <- length(plates)
+
+log_df <- data.frame(Plate = rep(NA, n),
+                     Sample_count = rep(NA,n),
+                     Probe_count = rep(NA,n),
+                     Removed_sample_count = rep(NA,n))
+
+
+counter <- 1
+for(p in plates){
+  load(paste(path,'/',p,'_log_data.Rdata',sep=''))
+  
+  log_df$Plate[counter] <- log_data$plate_name
+  log_df$Sample_count[counter] <- log_data$n_samples
+  log_df$Probe_count[counter] <- log_data$n_probes
+  log_df$Removed_sample_count[counter] <- paste(log_data$n_samples_removed,
+                                          ' (',round(100*log_data$n_samples_removed/log_data$n_samples,digits=1),
+                                          '%)', sep='')
+  counter <- counter+1
+}
+
+colnames(log_df) <- c('Plate',
+                      'Samples',
+                      'Probes',
+                      'Removed samples')
+
+kable(log_df)%>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+## List of removed samples
+
+```{r}
+df2 <- data.frame('Removed samples' = log_data$rm_sample_list)
+
+kable(df2) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+
+```
+

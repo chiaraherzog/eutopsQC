@@ -1,0 +1,77 @@
+---
+title: "5. Signal-to-noise"
+output:
+  html_document:
+    code_folding: "hide"
+    theme: simplex
+---
+
+```{r setup, include=FALSE}
+# rmarkdown::render_site()
+knitr::opts_chunk$set(echo = FALSE)
+library(ggplot2)
+library(dplyr)
+library(plotly)
+library(tibble)
+
+x <- rho %>%
+  tibble::rownames_to_column("basename") %>%
+  mutate(plate = stringr::str_split(basename, "_", simplify = TRUE)[,1]) 
+
+rows <- length(unique(x$plate))/3
+if(round(rows) == 0){
+  rows <- 1
+}
+height = rows*3.5
+```
+
+
+# Plots {.tabset .tabset-fade}
+
+## Density plot
+
+```{r fig.align = "center"}
+rho %>%
+  tibble::rownames_to_column("basename") %>%
+  mutate(plate = stringr::str_split(basename, "_", simplify = TRUE)[,1]) %>%
+  ggplot(aes(x = rho,
+             colour = plate)) +
+  geom_density(bw = 0.2) +
+  theme(legend.position = "bottom")
+```
+
+## Violin plot
+
+```{r fig.align = "center"}
+rho %>%
+  tibble::rownames_to_column("basename") %>%
+  mutate(plate = stringr::str_split(basename, "_", simplify = TRUE)[,1]) %>%
+  ggplot(aes(x = plate,
+             y = rho)) +
+  geom_violin(aes(fill = plate)) +
+  geom_boxplot(width = 0.1) +
+  theme(legend.position = "bottom",
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank())
+```
+
+## Individual samples
+
+```{r fig.align = "center", fig.width = 10, fig.height=height}
+x <- rho %>%
+  tibble::rownames_to_column("basename") %>%
+  mutate(plate = stringr::str_split(basename, "_", simplify = TRUE)[,1]) %>%
+  ggplot(aes(x = basename,
+             y = rho)) +
+  geom_point(aes(colour = plate)) +
+  theme(legend.position = "bottom",
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank()) +
+  facet_wrap(~plate,
+             scales = "free_x",
+             nrow = ceiling(rows))
+
+ggplotly(x)
+```
+
+

@@ -1,0 +1,149 @@
+---
+title: "7. Batch effects"
+output:
+  html_document:
+    code_folding: "hide"
+    theme: simplex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+library(plotly)
+library(dplyr)
+library(ggplot2)
+library(uwot)
+```
+
+# UMAP
+
+```{r fig.align = "center", fig.width = 4.5, fig.height = 4.5}
+if(ncol(beta_merged)<=15){
+  n <- ncol(beta_merged)
+} else {
+ n <- 15 
+}
+
+umap <- uwot::umap(t(beta_merged[1:30000,]), n_neighbors = n)
+
+intersect <- intersect(rownames(umap), pheno$basename)
+pheno <- pheno[match(intersect, pheno$basename),]
+umap <- umap[match(intersect, rownames(umap)),]
+pheno$umap1 <- umap[,1]
+pheno$umap2 <- umap[,2]
+
+variables <- colnames(pheno)[!colnames(pheno) %in% c("basename",
+                                                     "umap1",
+                                                     "umap2")]
+
+plt <- htmltools::tagList()
+i <- 1
+for (var in variables){
+  x <- pheno %>%
+    ggplot(aes(x = umap1,
+               y= umap2,
+               colour = .data[[var]])) +
+    geom_point() +
+    ggtitle(var) +
+    theme(legend.title = element_blank())
+  
+  # Print an interactive plot
+  # Add to list
+  plt[[i]] <- as_widget(ggplotly(x))
+  i <- i + 1
+}
+
+
+plt
+```
+
+# MDS plots
+
+```{r fig.align = "center", fig.width = 4.5, fig.height = 4.5}
+d <- dist(t(beta_merged[1:30000,]))
+fit <- cmdscale(d,eig=TRUE, k=2)
+
+x <- fit$points[,1]
+y <- fit$points[,2]
+
+pheno$x <- x
+pheno$y <- y
+
+variables <- colnames(pheno)[!colnames(pheno) %in% c("basename",
+                                                     "umap1",
+                                                     "umap2",
+                                                     "x", "y")]
+plt <- htmltools::tagList()
+i <- 1
+for (var in variables){
+  x <- pheno %>%
+    ggplot(aes(x = x,
+               y= y,
+               colour = .data[[var]])) +
+    geom_point() +
+    ggtitle(var) +
+    theme(legend.title = element_blank())
+  
+  plt[[i]] <- as_widget(ggplotly(x))
+  i <- i + 1
+}
+
+plt
+```
+
+
+# PCA
+
+```{r}
+fit <- prcomp(t(beta_merged[1:30000,]),retx=TRUE,scale.=FALSE,center=TRUE)
+
+if(ncol(beta_merged)<=10){
+  P <- ncol(beta_merged)-1
+  } else {
+    P <- 10
+} # gives first P principal components
+
+pdat <- pheno %>%
+  select(-c(basename, umap1, umap2, x, y)) %>%
+  mutate_if(is.character,as.factor) %>%
+  as.data.frame()
+
+pval <- matrix(NA, nrow = ncol(pdat), ncol = P)
+X <- fit$x[,1:P]
+
+rownames(pval) <- colnames(pdat)
+colnames(pval) <- colnames(X)
+
+# loop over each phenotypic trait
+for (i in 1:ncol(pdat)){
+  
+  #loop over each of the P principal components
+  for (j in 1:P){
+    
+    # if factor do kruskal wallis test
+    if (is.factor(pdat[,i])){
+      tst <- kruskal.test(X[,j],pdat[,i])
+      pval[i,j] <- tst$p.value
+    }
+    
+    # if numeric look for correlation
+    if (is.numeric(pdat[,i])){
+      tst <- cor.test(X[,j],pdat[,i])
+      pval[i,j] <- tst$p.value
+    }
+  }
+}
+
+pval[pval==0] <- 1e-100
+
+plot_ly(x=colnames(pval),
+        y=rownames(pval),
+        z=log10(pval),
+        colors = colorRamp(c("red", "yellow", "white")),
+        type='heatmap')%>%
+  config(displayModeBar = FALSE)
+```
+
+
+
+

@@ -1,0 +1,6 @@
+---
+title: "QC report"
+output:
+  html_document:
+    theme: simplex
+---

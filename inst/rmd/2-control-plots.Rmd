@@ -1,0 +1,379 @@
+---
+title: "2. Control plots"
+output:
+  html_document:
+    code_folding: "hide"
+    theme: simplex
+---
+
+```{r setup, include=FALSE}
+# rmarkdown::render_site()
+knitr::opts_chunk$set(echo = FALSE)
+library(plotly)
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+suppressPackageStartupMessages(library(minfi))
+
+len <- case_when(ncol(RGset) <= 32 ~ 9,
+                 ncol(RGset) <= 64 ~ 12,
+                   TRUE ~ 15)
+
+
+```
+
+<center>
+
+```{r fig.align = "center", fig.width = len, fig.height = 4}
+
+if (is(RGset, "rgDataSet")) {
+    ctrls <- ENmix::getCGinfo(RGset, type = "ctrl")
+  } else if (is(RGset, "RGChannelSet")) {
+    ctrls <- minfi::getProbeInfo(RGset, type = "Control")
+}
+  
+ctrls <- ctrls[ctrls$Address %in% rownames(RGset) & !is.na(ctrls$Color), ]
+ctrl_r <- assays(RGset)$Red[ctrls$Address, ]
+ctrl_g <- assays(RGset)$Green[ctrls$Address, ]
+
+contlid <- c("STAINING", "EXTENSION", "TARGET REMOVAL", "TARGET REMOVAL", 
+               "BISULFITE CONVERSION I", "BISULFITE CONVERSION II", "HYBRIDIZATION",
+               "SPECIFICITY I", "SPECIFICITY II", "NON-POLYMORPHIC", 
+               "NEGATIVE", "NORM_A", "NORM_C", "NORM_G", "NORM_T", "NORM_ACGT")
+
+if(grepl("mouse", array, ignore.case = T)){
+    contlid <- c("STAINING", "EXTENSION", "TARGET REMOVAL", "TARGET REMOVAL", 
+                 "BISULFITE CONVERSION I", "BISULFITE CONVERSION II", "HYBRIDIZATION",
+                 "SPECIFICITY I", "SPECIFICITY II", "NON-POLYMORPHIC", 
+                 "NEGATIVE", "NORM_A", "NORM_C", "NORM_G", "NORM_T")
+}
+
+
+contlid <- contlid[contlid %in% unique(ctrls$Type)]
+
+ctrl_g <- ctrl_g %>%
+  as.data.frame() %>%
+  tibble::rownames_to_column("Address") %>%
+  tidyr::pivot_longer(-c("Address"),
+               names_to = "Sample",
+               values_to = "Green")
+
+ctrl_r <- ctrl_r %>%
+  as.data.frame() %>%
+  tibble::rownames_to_column("Address") %>%
+  tidyr::pivot_longer(-c("Address"),
+                      names_to = "Sample",
+                      values_to = "Red")
+
+dat <- ctrls %>%
+  as.data.frame() %>%
+  dplyr::full_join(ctrl_g, by = "Address") %>%
+  dplyr::full_join(ctrl_r, by = c("Address", "Sample")) %>%
+  tidyr::pivot_longer(c("Green", "Red"),
+               names_to = "Fluorophore",
+               values_to = "Intensity")
+
+theme_set(theme(panel.background = element_blank(),
+                axis.ticks.x = element_blank(),
+                axis.text.x = element_blank()))
+
+## Staining ------
+if ("STAINING" %in% contlid){
+  d <- dat %>%
+    filter(Type == "STAINING") %>%
+    ggplot(aes(x = Sample,
+               y = Intensity,
+               colour = ExtendedType)) +
+    geom_hline(yintercept= 0,
+               size = 0.2,
+               colour = "gray40") +
+    geom_point(shape = 1,
+               alpha = 0.8) +
+    facet_wrap(~Fluorophore) +
+    scale_colour_viridis_d(name  = "") +
+    ggtitle("STAINING")
+  
+  ggplotly(d)
+}
+
+## Extension ------
+if ("EXTENSION" %in% contlid){
+  d <- dat %>%
+    filter(Type == "EXTENSION") %>%
+    ggplot(aes(x = Sample,
+               y = Intensity,
+               colour = ExtendedType)) +
+    geom_hline(yintercept= 0,
+               size = 0.2,
+               colour = "gray40") +
+    geom_point(shape = 1,
+               alpha = 0.8) +
+    facet_wrap(~Fluorophore) +
+    scale_colour_viridis_d(name  = "") +
+    ggtitle("EXTENSION")
+  
+  ggplotly(d)
+}
+
+
+## HYBRIDIZATION ------
+if ("HYBRIDIZATION" %in% contlid){
+  d <- dat %>%
+    filter(Type == "HYBRIDIZATION") %>%
+    ggplot(aes(x = Sample,
+               y = Intensity,
+               colour = ExtendedType)) +
+    geom_hline(yintercept= 0,
+               size = 0.2,
+               colour = "gray40") +
+    geom_point(shape = 1,
+               alpha = 0.8) +
+    facet_wrap(~Fluorophore) +
+    scale_colour_viridis_d(name  = "") +
+    ggtitle("HYBRIDIZATION")
+  
+  ggplotly(d)
+}
+
+
+## TARGET REMOVAL ------
+if ("TARGET REMOVAL" %in% contlid){
+  d <- dat %>%
+    filter(Type == "TARGET REMOVAL") %>%
+    ggplot(aes(x = Sample,
+               y = Intensity,
+               colour = ExtendedType)) +
+    geom_hline(yintercept= 0,
+               size = 0.2,
+               colour = "gray40") +
+    geom_point(shape = 1,
+               alpha = 0.8) +
+    facet_wrap(~Fluorophore) +
+    scale_colour_viridis_d(name  = "") +
+    ggtitle("TARGET REMOVAL")
+  
+  ggplotly(d)
+}
+
+## BISULFITE CONVERSION I ------
+if ("BISULFITE CONVERSION I" %in% contlid){
+  d <- dat %>%
+    filter(Type == "BISULFITE CONVERSION I") %>%
+    ggplot(aes(x = Sample,
+               y = Intensity,
+               colour = ExtendedType)) +
+    geom_hline(yintercept= 0,
+               size = 0.2,
+               colour = "gray40") +
+    geom_point(shape = 1,
+               alpha = 0.8) +
+    facet_wrap(~Fluorophore) +
+    scale_colour_viridis_d(name  = "") +
+    ggtitle("BISULFITE CONVERSION I")
+  
+  ggplotly(d)
+}
+  
+## BISULFITE CONVERSION II ------
+if ("BISULFITE CONVERSION II" %in% contlid){
+  d <- dat %>%
+    filter(Type == "BISULFITE CONVERSION II") %>%
+    ggplot(aes(x = Sample,
+               y = Intensity,
+               colour = ExtendedType)) +
+    geom_hline(yintercept= 0,
+               size = 0.2,
+               colour = "gray40") +
+    geom_point(shape = 1,
+               alpha = 0.8) +
+    facet_wrap(~Fluorophore) +
+    scale_colour_viridis_d(name  = "") +
+    ggtitle("BISULFITE CONVERSION II")
+  
+  ggplotly(d)
+}
+  
+## SPECIFICITY I ------
+if ("SPECIFICITY I" %in% contlid){
+  d <- dat %>%
+    filter(Type == "SPECIFICITY I") %>%
+    ggplot(aes(x = Sample,
+               y = Intensity,
+               colour = ExtendedType)) +
+    geom_hline(yintercept= 0,
+               size = 0.2,
+               colour = "gray40") +
+    geom_point(shape = 1,
+               alpha = 0.8) +
+    facet_wrap(~Fluorophore) +
+    scale_colour_viridis_d(name  = "") +
+    ggtitle("SPECIFICITY I")
+  
+  ggplotly(d)
+}
+
+## SPECIFICITY II ------
+if ("SPECIFICITY II" %in% contlid){
+  d <- dat %>%
+    filter(Type == "SPECIFICITY II") %>%
+    ggplot(aes(x = Sample,
+               y = Intensity,
+               colour = ExtendedType)) +
+    geom_hline(yintercept= 0,
+               size = 0.2,
+               colour = "gray40") +
+    geom_point(shape = 1,
+               alpha = 0.8) +
+    facet_wrap(~Fluorophore) +
+    scale_colour_viridis_d(name  = "") +
+    ggtitle("SPECIFICITY II")
+  
+  ggplotly(d)
+}
+
+
+## NON-POLYMORPHIC ------
+if ("NON-POLYMORPHIC" %in% contlid){
+  d <- dat %>%
+    filter(Type == "NON-POLYMORPHIC") %>%
+    ggplot(aes(x = Sample,
+               y = Intensity,
+               colour = ExtendedType)) +
+    geom_hline(yintercept= 0,
+               size = 0.2,
+               colour = "gray40") +
+    geom_point(shape = 1,
+               alpha = 0.8) +
+    facet_wrap(~Fluorophore) +
+    scale_colour_viridis_d(name  = "") +
+    ggtitle("NON-POLYMORPHIC")
+  
+  ggplotly(d)
+}
+
+
+## NEGATIVE ------
+if ("NEGATIVE" %in% contlid){
+  d <- dat %>%
+    filter(Type == "NEGATIVE") %>%
+    ggplot(aes(x = Sample,
+               y = Intensity,
+               colour = Sample,
+               text = paste0(Sample = "Sample"))) +
+    geom_hline(yintercept= 0,
+               size = 0.2,
+               colour = "gray40") +
+    geom_boxplot() +
+    facet_wrap(~Fluorophore) +
+    scale_colour_viridis_d(name  = "") +
+    ggtitle("NEGATIVE") +
+    theme(legend.position = "none")
+  
+  d
+}
+
+
+
+## NORM_A ------
+if ("NORM_A" %in% contlid){
+  d <- dat %>%
+    filter(Type == "NORM_A") %>%
+    ggplot(aes(x = Sample,
+               y = Intensity,
+               fill = Sample,
+               text = paste0(Sample = "Sample"))) +
+    geom_hline(yintercept= 0,
+               size = 0.2,
+               colour = "gray40") +
+    geom_boxplot() +
+    facet_wrap(~Fluorophore) +
+    scale_fill_viridis_d(name  = "") +
+    ggtitle("NORM_A") +
+    theme(legend.position = "none")
+  
+  print(d)
+}
+
+## NORM_C ------
+if ("NORM_C" %in% contlid){
+  d <- dat %>%
+    filter(Type == "NORM_C") %>%
+    ggplot(aes(x = Sample,
+               y = Intensity,
+               fill = Sample,
+               text = paste0(Sample = "Sample"))) +
+    geom_hline(yintercept= 0,
+               size = 0.2,
+               colour = "gray40") +
+    geom_boxplot() +
+    facet_wrap(~Fluorophore) +
+    scale_fill_viridis_d(name  = "") +
+    ggtitle("NORM_C") +
+    theme(legend.position = "none")
+  
+  print(d)
+}
+
+## NORM_G ------
+if ("NORM_G" %in% contlid){
+  d <- dat %>%
+    filter(Type == "NORM_G") %>%
+    ggplot(aes(x = Sample,
+               y = Intensity,
+               fill = Sample,
+               text = paste0(Sample = "Sample"))) +
+    geom_hline(yintercept= 0,
+               size = 0.2,
+               colour = "gray40") +
+    geom_boxplot() +
+    facet_wrap(~Fluorophore) +
+    scale_fill_viridis_d(name  = "") +
+    ggtitle("NORM_G") +
+    theme(legend.position = "none")
+  
+  print(d)
+}
+
+## NORM_T ------
+if ("NORM_T" %in% contlid){
+  d <- dat %>%
+    filter(Type == "NORM_T") %>%
+    ggplot(aes(x = Sample,
+               y = Intensity,
+               fill = Sample,
+               text = paste0(Sample = "Sample"))) +
+    geom_hline(yintercept= 0,
+               size = 0.2,
+               colour = "gray40") +
+    geom_boxplot() +
+    facet_wrap(~Fluorophore) +
+    scale_fill_viridis_d(name  = "") +
+    ggtitle("NORM_T") +
+    theme(legend.position = "none")
+  
+  print(d)
+}
+
+
+## NORM_ACGT ------
+if ("NORM_ACGT" %in% contlid){
+  d <- dat %>%
+    filter(Type == "NORM_ACGT") %>%
+    ggplot(aes(x = Sample,
+               y = Intensity,
+               fill = Sample,
+               text = paste0(Sample = "Sample"))) +
+    geom_hline(yintercept= 0,
+               size = 0.2,
+               colour = "gray40") +
+    geom_boxplot() +
+    facet_wrap(~Fluorophore) +
+    scale_fill_viridis_d(name  = "") +
+    ggtitle("NORM_ACGT") +
+    theme(legend.position = "none")
+  
+  print(d)
+}
+```
+
+</center>
