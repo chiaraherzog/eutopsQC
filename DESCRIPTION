@@ -27,7 +27,7 @@ Imports:
     ewastools,
     plotly,
     ggplot2, 
-    imput,
+    impute,
     ChAMP,
     RPMM,
     cluster,
