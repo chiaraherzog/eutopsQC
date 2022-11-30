@@ -103,8 +103,16 @@ if(ncol(beta_merged)<=10){
     P <- 10
 } # gives first P principal components
 
+# find any columns consisting of only one observation
+unique <- ""
+
+for (i in ncol(pheno)){
+  if(length(unique(pheno[,1])) < 2
+}
+
 pdat <- pheno %>%
-  select(-c(basename, umap1, umap2, x, y)) %>%
+  dplyr::select(where(~ length(unique(.))>1)) |>  # Keep only columns which have more than one unique value for batch effect analysis.
+  dplyr::select(-c(basename, umap1, umap2, x, y)) %>%
   mutate_if(is.character,as.factor) %>%
   as.data.frame()
 

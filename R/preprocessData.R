@@ -18,7 +18,29 @@ preprocessData <- function(input = "",
                            report = "",
                            array = "EPIC",
                            pheno = NULL,
-                           path_to_bad_sample_list = ""){
+                           path_to_bad_sample_list = "",
+                           overwrite = FALSE){
+  
+  # specify paths input/output folders based on system type
+  suppressPackageStartupMessages(require(fs))
+  if(.Platform$OS.type == "unix") {
+    path_scripts <- "~/Dropbox/src/DNAm-preprocessing/"
+    path_rho <- "~/Dropbox/src/DNAm-tools/rho_estimator.R"
+    files <- c("~/Dropbox/src/data/chrY_names.Rdata",
+               "~/Dropbox/src/data/zhou_list.Rdata",
+               "~/Dropbox/src/data/snp_names_8oct19.Rdata",
+               "~/Dropbox/src/data/non_CpG_names.Rdata")
+    path_templates <- "~/Dropbox/src/data/report-templates/"
+  } else {
+    path_db <- path_expand("~/Dropbox")
+    path_scripts <- paste0(path_db,"/src/DNAm-preprocessing/")
+    files <- c(paste0(path_db, "/src/data/chrY_names.Rdata"),
+               paste0(path_db, "/src/data/zhou_list.Rdata"),
+               paste0(path_db, "/src/data/snp_names_8oct19.Rdata"),
+               paste0(path_db, "/src/data/non_CpG_names.Rdata"))
+    path_templates <- paste0(path_db, "/src/data/report-templates/")
+    path_rho <- paste0(path_db, "/src/DNAm-tools/rho_restimator.R")
+  }
   
   # create Output folder
   if(dir.exists(output)){
@@ -27,7 +49,7 @@ preprocessData <- function(input = "",
     dir.create(output, recursive = TRUE)
     cat(paste0("Output folder ", output, " created.\n"))
   }
-  if(length(list.files(output))>0){
+  if(length(list.files(output))>0 & overwrite == FALSE){
     stop("Output folder is not empty, continuing would overwrite existing results.")
   }
   
