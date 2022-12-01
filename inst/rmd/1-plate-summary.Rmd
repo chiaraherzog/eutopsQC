@@ -1,5 +1,5 @@
 ---
-title: "1. Plate summary"
+title: "1. Beadchip summary"
 output:
   html_document:
     code_folding: "hide"
@@ -8,58 +8,71 @@ output:
 
 ```{r setup, include=FALSE}
 # rmarkdown::render_site()
-knitr::opts_chunk$set(echo = FALSE,
-                      message = FALSE,
-                      warning = FALSE)
+knitr::opts_chunk$set(echo = FALSE)
 library(kableExtra)
+library(formattable)
 
 path <- log
 ```
 
 
 ```{r}
-# Scan for plates in PATH
-input_dir_list <- dir(path)
-plates <- plates
+# Scan for beadchips in PATH
+beadchips <- unique(stringr::str_split(pheno$basename, "_", simplify = T)[,1])
 
 # Construct data frame
-n <- length(plates)
-
-log_df <- data.frame(Plate = rep(NA, n),
+n <- length(beadchips)
+log_df <- data.frame(Beadchip = beadchips,
                      Sample_count = rep(NA,n),
                      Probe_count = rep(NA,n),
                      Removed_sample_count = rep(NA,n))
 
+files <- list.files(path, full.names = T)
+load(files[grepl('_log_data.Rdata',files)])
+log_df$Probe_count <- log_data$n_probes
 
-counter <- 1
-for(p in plates){
-  load(paste(path,'/',p,'_log_data.Rdata',sep=''))
+
+for (i in 1:nrow(log_df)){
   
-  log_df$Plate[counter] <- log_data$plate_name
-  log_df$Sample_count[counter] <- log_data$n_samples
-  log_df$Probe_count[counter] <- log_data$n_probes
-  log_df$Removed_sample_count[counter] <- paste(log_data$n_samples_removed,
-                                          ' (',round(100*log_data$n_samples_removed/log_data$n_samples,digits=1),
-                                          '%)', sep='')
-  counter <- counter+1
+  if(any(grepl(log_df$Beadchip[i], log_data$rm_sample_list))){
+    tmp <- log_data$rm_sample_list[grepl(log_df$Beadchip[i], log_data$rm_sample_list)]
+    log_df$Sample_count[i] <- 8-length(tmp)
+    log_df$Removed_sample_count[i] <- paste0(length(tmp), " (",
+                                          length(tmp)/8*100, "%)")
+    } else {
+    log_df$Sample_count[i] <- 8
+    log_df$Removed_sample_count[i] <- "0 (0%)"
+  }
+  
 }
 
-colnames(log_df) <- c('Plate',
+colnames(log_df) <- c('Beadchip',
                       'Samples',
                       'Probes',
                       'Removed samples')
 
-kable(log_df)%>%
-  kable_styling(bootstrap_options = c("striped", "hover"))
+# kable(log_df)%>%
+#   kable_styling(bootstrap_options = c("striped", "hover"))
+
+x <- log_df |> 
+  formattable(list(
+              Beadchip = formatter("span",
+                                   style = x ~ style(color = ifelse(log_df$Samples == 8, "seagreen", "palevioletred"))),
+              Samples = formatter("span", 
+                                           x ~ icontext(ifelse(x == 8, "ok", "remove"),
+                                                        x), 
+                                           style = x ~ style(color = ifelse(x == 8, "seagreen", "palevioletred")))))
+
+as.datatable(x, rownames = FALSE,
+             options = list(pageLength = 10))
 ```
 
 ## List of removed samples
 
 ```{r}
-df2 <- data.frame('Removed samples' = log_data$rm_sample_list)
+rm <- pheno[match(log_data$rm_sample_list, pheno$basename),]
 
-kable(df2) %>%
-  kable_styling(bootstrap_options = c("striped", "hover"))
-
+rm |> 
+  DT::datatable()
 ```
 
