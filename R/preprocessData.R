@@ -18,6 +18,7 @@ preprocessData <- function(input = "",
                            report = "",
                            array = "EPIC",
                            pheno = NULL,
+                           by.dir = FALSE,
                            path_to_bad_sample_list = "",
                            overwrite = FALSE){
   
@@ -135,9 +136,10 @@ preprocessData <- function(input = "",
   
   # Initalise a list to log various parameters
   plates <- list.dirs(input,
-                      full.names = FALSE)
-  plates <- plates[nchar(plates)==10] # get only actual plates
-  
+                      full.names = FALSE, recursive = F)
+  if(by.dir == F){
+    plates <- plates[nchar(plates)==10] # get only actual platenames - historic; keeps only long name plates
+  }
   # If plate names don't exist
   if (length(plates)==0){
     tmp <- stringr::str_split(input, "/", simplify = TRUE)
@@ -145,6 +147,7 @@ preprocessData <- function(input = "",
     rm(tmp)
   }
   
+  # by plate (or directory)
   for (i in 1:length(plates)){
     
     log_data <- list(plate_name = plates[i], # name of plate
