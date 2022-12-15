@@ -21,28 +21,8 @@ preprocessData <- function(input = "",
                            cores = 4,
                            by.dir = FALSE,
                            path_to_bad_sample_list = "",
-                           overwrite = FALSE){
-  
-  # specify paths input/output folders based on system type
-  suppressPackageStartupMessages(require(fs))
-  if(.Platform$OS.type == "unix") {
-    path_scripts <- "~/Dropbox/src/DNAm-preprocessing/"
-    path_rho <- "~/Dropbox/src/DNAm-tools/rho_estimator.R"
-    files <- c("~/Dropbox/src/data/chrY_names.Rdata",
-               "~/Dropbox/src/data/zhou_list.Rdata",
-               "~/Dropbox/src/data/snp_names_8oct19.Rdata",
-               "~/Dropbox/src/data/non_CpG_names.Rdata")
-    path_templates <- "~/Dropbox/src/data/report-templates/"
-  } else {
-    path_db <- path_expand("~/Dropbox")
-    path_scripts <- paste0(path_db,"/src/DNAm-preprocessing/")
-    files <- c(paste0(path_db, "/src/data/chrY_names.Rdata"),
-               paste0(path_db, "/src/data/zhou_list.Rdata"),
-               paste0(path_db, "/src/data/snp_names_8oct19.Rdata"),
-               paste0(path_db, "/src/data/non_CpG_names.Rdata"))
-    path_templates <- paste0(path_db, "/src/data/report-templates/")
-    path_rho <- paste0(path_db, "/src/DNAm-tools/rho_restimator.R")
-  }
+                           overwrite = FALSE,
+                           create.shiny = F){
   
   # create Output folder
   if(dir.exists(output)){
@@ -185,15 +165,22 @@ preprocessData <- function(input = "",
       }
     
     # Save shinyMethyl page
-    suppressPackageStartupMessages(library(shinyMethyl))
-    invisible(summary <- shinySummarize(RGset))
+    if(create.shiny == T){
+        suppressPackageStartupMessages(library(shinyMethyl))
+        invisible(summary <- shinySummarize(RGset))
     
-    save(summary, file = paste0(output, "/", plates[i], "_shinyMethyl.Rdata")) # This file can be opened later to run the shiny app
+        save(summary, file = paste0(output, "/", plates[i], "_shinyMethyl.Rdata")) # This file can be opened later to run the shiny app
+    }
     
-    # Plot the controls
-    rmarkdown::render(input = paste0(system.file("rmd", "2-control-plots.Rmd", package = "eutopsQC")), 
-                      output_file = paste0(report, "2-control-plots.html", sep = ""))
-    
+    # Save the controls for later
+    if (is(RGset, "rgDataSet")) {
+      ctrls <- ENmix::getCGinfo(RGset, type = "ctrl")
+    } else if (is(RGset, "RGChannelSet")) {
+      ctrls <- minfi::getProbeInfo(RGset, type = "Control")
+    }
+    ctrls <- ctrls[ctrls$Address %in% rownames(RGset) & !is.na(ctrls$Color), ]
+    ctrl_r <- assays(RGset)$Red[ctrls$Address, ]
+    ctrl_g <- assays(RGset)$Green[ctrls$Address, ]
     # Extract detection p-values from RGset
     detP <- minfi::detectionP(RGset, type = "m+u")
     
@@ -202,6 +189,15 @@ preprocessData <- function(input = "",
     Mset <- preprocessRaw(RGset)
     qc <- getQC(Mset)
     cat(' done\n')
+    
+    # Extract Rho
+    cat('Calculating rho...\n')
+    rho <- data.frame(matrix(NA, ncol=3))
+    colnames(rho) <- c("mode0", "mode1", "rho")
+    rho <- rhoEstimator(Mset, anno = array)
+    cat('done\n')
+    
+    rho <- rhoEstimator(Mset, anno = anno)
     
     # Extract SNP outlier metric using ewastools
     cat('Begin QC (SNP outlier metric) extraction...')
@@ -313,6 +309,9 @@ preprocessData <- function(input = "",
     save(qc, file=paste(log,'/',
                         plates[i],'_qc.Rdata',sep=''))
     
+    save(ctrl_g, ctrl_r, file=paste(log,'/',
+                                    plates[i],'_ctrl.Rdata',sep=''))
+    
     if(length(plates) != 1){
     save(beta_ssNOOB_filtered_norm, file=paste(output,'/',
                                                plates[i],'_beta_ssNOOB_filtered_norm.Rdata',sep=''))
@@ -323,6 +322,9 @@ preprocessData <- function(input = "",
     
     save(p, file=paste(log,'/',
                        plates[i],'_beta_density_plot.Rdata',sep=''))
+    
+    save(rho, file=paste(log,'/',
+                       plates[i],'_rho.Rdata',sep=''))
     
     save(log_data, file=paste(log,'/',
                               plates[i],'_log_data.Rdata',sep=''))
@@ -480,16 +482,50 @@ preprocessData <- function(input = "",
   ind <- grepl("filtered_norm", files)
   file.remove(files[ind])
   
-  # Save SNR
-  cat('Calculating rho...\n')
-  rho <- data.frame(matrix(NA, ncol=3))
-  colnames(rho) <- c("mode0", "mode1", "rho")
-  rho <- rhoEstimator(input, anno = array)
-  save(rho, file = paste0(log, "/rho.Rdata", sep = ""))
-  cat('done\n')
+  
+  # Load rho
+  if(length(plates) == 1){
+    load(paste(log,'/',plates,'_rho.Rdata',sep=''))
+  } else {
+    for(c in 1:length(plates)){
+      load(paste(log,'/',plates[i],'_rho.Rdata',sep=''))
+      
+      if(c ==1){
+        rho_tmp <- rho
+      } else {
+        rho_tmp <- rbind(rho_tmp, rho)
+      }
+    }
+  }
+  
+  if(exists(rho)){
+    rho <- rho_tmp
+  }
   
   pheno$rho <- numeric(length = nrow(pheno))
   pheno$rho <- rho$rho[match(pheno$basename, rownames(rho))]
+  
+  # Load controls
+  if(length(plates) == 1){
+    load(paste(log,'/',plates,'_ctrl.Rdata',sep=''))
+  } else {
+    for(c in 1:length(plates)){
+      load(paste(log,'/',plates[i],'_ctrl.Rdata',sep=''))
+      
+      if(c ==1){
+      ctrl_tmp_g <- ctrl_g
+      ctrl_tmp_r <- ctrl_r
+      } else {
+        ctrl_tmp_g <- cbind(ctrl_tmp_g, ctrl_g)
+        ctrl_tmp_r <- cbind(ctrl_tmp_r, ctrl_r)
+      }
+    }
+  }
+  
+  if(exists(ctrl_tmp_g)){
+    ctrl_g <- ctrl_tmp_g
+    ctrl_r <- ctrl_tmp_r
+  }
   
   # Create a report
   cat('Creating RMarkdown Report...\n')
@@ -497,8 +533,12 @@ preprocessData <- function(input = "",
             to = report)
   file.copy(from = paste0(system.file("rmd", "index.Rmd", package = "eutopsQC")),
             to = report)
-  rmarkdown::render(input = paste0(system.file("rmd", "1-plate-summary.Rmd", package = "eutopsQC")), 
+  rmarkdown::render(input = paste0(system.file("rmd", "1-plate-summary.Rmd",
+                                               package = "eutopsQC")), 
                     output_file = paste0(report, "1-plate-summary.html", sep = ""))
+  rmarkdown::render(input = paste0(system.file("rmd", "2-control-plots.Rmd", package = "eutopsQC")), 
+                    output_file = paste0(report, "2-control-plots.html", sep = ""))
+  
   rmarkdown::render(input = paste0(system.file("rmd", "3-qc.Rmd", package = "eutopsQC")),
                     output_file = paste0(report, "3-qc.html", sep = ""))
   rmarkdown::render(input = paste0(system.file("rmd", "4-beta-distributions.Rmd", package = "eutopsQC")),

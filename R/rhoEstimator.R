@@ -1,12 +1,12 @@
 #' rhoEstimator
 #'
 #' Estimates signal to noise ratio
-#' @param path path to IDATs
+#' @param Mset MSet
 #' @param anno EPIC
 #' @return signal-to-noise (rho) value
 #' @export
 
-rhoEstimator <- function(path = NULL,
+rhoEstimator <- function(Mset = Mset,
                           beta_e = 0.3309135,
                           beta_s1 = 0.019570,
                           beta_s2 = 0.970650,
@@ -26,18 +26,11 @@ rhoEstimator <- function(path = NULL,
     data("IlluminaHumanMethylation450kanno.ilmn12.hg19")
     anno = getAnnotation(IlluminaHumanMethylation450kanno.ilmn12.hg19)
   }
-  
-  RGset <- read.metharray.exp(base = path, verbose = F, force = TRUE, recursive = TRUE)
-  
-  if(grepl("mouse", array, ignore.case = T)){
-    RGset@annotation <- c(array = "IlluminaMouseMethylation", annotation = "12.v1.mm10")
-  }
-  
-  Mset <- preprocessRaw(RGset)
+
   ratioSet <- ratioConvert(Mset, what = "both", keepCN = TRUE)
   beta_raw <- getBeta(ratioSet)
   
-  cat(paste("raw beta extracted for samples (n = ", dim(RGset)[2], ")", sep="" ))
+  cat(paste("raw beta extracted for samples (n = ", dim(Mset)[2], ")", sep="" ))
   
   # step 1 -------- calculate type I and type II density   
   
