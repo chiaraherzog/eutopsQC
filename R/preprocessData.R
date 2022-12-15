@@ -18,6 +18,7 @@ preprocessData <- function(input = "",
                            report = "",
                            array = "EPIC",
                            pheno = NULL,
+                           cores = 4,
                            by.dir = FALSE,
                            path_to_bad_sample_list = "",
                            overwrite = FALSE){
@@ -273,7 +274,7 @@ preprocessData <- function(input = "",
     # Probe bias correction using BMIQ
     if(grepl("mouse", array, ignore.case = T)){
       cat('Begin BMIQ normalisation using', array, 'version...\n')
-      beta_ssNOOB_filtered_norm <- invisible(IlluminaMouseMethylationmanifest::champ.normm(beta=beta_ssNOOB_filtered,arraytype=array,cores=4))
+      beta_ssNOOB_filtered_norm <- invisible(IlluminaMouseMethylationmanifest::champ.normm(beta=beta_ssNOOB_filtered,arraytype=array,cores=cores))
       cat('done\n')
     } else {
       cat('Begin BMIQ normalisation using', array, 'version...\n')
