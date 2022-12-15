@@ -195,9 +195,8 @@ preprocessData <- function(input = "",
     rho <- data.frame(matrix(NA, ncol=3))
     colnames(rho) <- c("mode0", "mode1", "rho")
     rho <- rhoEstimator(Mset, anno = array)
+    anno <- array
     cat('done\n')
-    
-    rho <- rhoEstimator(Mset, anno = anno)
     
     # Extract SNP outlier metric using ewastools
     cat('Begin QC (SNP outlier metric) extraction...')
