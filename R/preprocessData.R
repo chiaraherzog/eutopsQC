@@ -124,7 +124,8 @@ preprocessData <- function(input = "",
   cat('Path to bad sample list =', path_to_bad_sample_list, '\n')
   cat('Path to output =',output,'\n')
   cat('Path to log file =',log,'\n')
-  cat('Pheno present =', ifelse(is.null(pheno), "FALSE", "TRUE"), "\n\n")
+  cat('Pheno present =', ifelse(is.null(pheno), "FALSE", "TRUE"), "\n")
+  cat('By directory = ', ifelse(is.null(pheno), "FALSE", "TRUE"), "\n\n")
   
   # Define global thresholds
   INTENSITY_THRESHOLD <- 9.5     # minimum median intensity required
@@ -312,8 +313,10 @@ preprocessData <- function(input = "",
     save(qc, file=paste(log,'/',
                         plates[i],'_qc.Rdata',sep=''))
     
+    if(length(plates) != 1){
     save(beta_ssNOOB_filtered_norm, file=paste(output,'/',
                                                plates[i],'_beta_ssNOOB_filtered_norm.Rdata',sep=''))
+    }
     
     save(detP, file=paste(log,'/',
                           plates[i],'_detP.Rdata',sep=''))
@@ -399,7 +402,9 @@ preprocessData <- function(input = "",
   beta_merged <- NULL
   
   for(p in plates){
+    if(length(plates != 1)){
     load(paste(output,'/',p,'_beta_ssNOOB_filtered_norm.Rdata',sep=''))
+    }
     load(paste(log,'/',p,'_detP.Rdata',sep=''))
     
     # remove probes and any bad samples   
