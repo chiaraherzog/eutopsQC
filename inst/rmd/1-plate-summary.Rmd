@@ -28,8 +28,31 @@ log_df <- data.frame(Beadchip = beadchips,
                      Removed_sample_count = rep(NA,n))
 
 files <- list.files(path, full.names = T)
-load(files[grepl('_log_data.Rdata',files)])
-log_df$Probe_count <- log_data$n_probes
+
+if(sum(grepl('_log_data.Rdata',files))==1){
+  load(files[grepl('_log_data.Rdata',files)])
+  } else {
+  files <- files[grepl('_log_data.Rdata',files)]
+  
+  for (f in files){
+    load(f)
+    
+    if(f == files[1]){
+    log_data_tmp <- log_data
+    } else {
+      
+      for (x in 1:length(log_data_tmp)){
+        log_data_tmp[[x]] <- c(log_data_tmp[[x]], log_data[[x]])
+      }
+    }
+    
+    log_data <- log_data_tmp
+  }
+  
+}
+
+
+log_df$Probe_count <- log_data$n_probes[1]
 
 
 for (i in 1:nrow(log_df)){

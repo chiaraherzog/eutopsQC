@@ -119,11 +119,8 @@ preprocessData <- function(input = "",
   # Initalise a list to log various parameters
   plates <- list.dirs(input,
                       full.names = FALSE, recursive = F)
-  if(by.dir == F){
-    plates <- plates[nchar(plates)==10] # get only actual platenames - historic; keeps only long name plates
-  }
-  # If plate names don't exist
-  if (length(plates)==0){
+  
+  if(by.dir == F){ # keep entire folder as one "set"
     tmp <- stringr::str_split(input, "/", simplify = TRUE)
     plates <- tmp[length(tmp)-1]
     rm(tmp)
@@ -194,7 +191,7 @@ preprocessData <- function(input = "",
     cat('Calculating rho...\n')
     rho <- data.frame(matrix(NA, ncol=3))
     colnames(rho) <- c("mode0", "mode1", "rho")
-    rho <- rhoEstimator(Mset, anno = array)
+    rho <- eutopsQC::rhoEstimator(Mset, anno = array)
     anno <- array
     cat('done\n')
     
@@ -274,7 +271,7 @@ preprocessData <- function(input = "",
       cat('done\n')
     } else {
       cat('Begin BMIQ normalisation using', array, 'version...\n')
-      beta_ssNOOB_filtered_norm <- invisible(champ.norm(beta=beta_ssNOOB_filtered,arraytype=array,cores=4))
+      beta_ssNOOB_filtered_norm <- invisible(champ.norm(beta=beta_ssNOOB_filtered,arraytype=array,cores=cores))
       cat('done\n')
     }
     
@@ -308,7 +305,7 @@ preprocessData <- function(input = "",
     save(qc, file=paste(log,'/',
                         plates[i],'_qc.Rdata',sep=''))
     
-    save(ctrl_g, ctrl_r, file=paste(log,'/',
+    save(ctrl_g, ctrl_r, ctrls, file=paste(log,'/',
                                     plates[i],'_ctrl.Rdata',sep=''))
     
     if(length(plates) != 1){
@@ -386,7 +383,6 @@ preprocessData <- function(input = "",
   cat('Removing', length(zhou_list),'Zhou SNP probes\n\n') 
   
   input_dir_list <- output
-  plates <- plates
   
   #check beta matrices and detP matrices are present for each plate
   for(p in plates){
@@ -477,9 +473,11 @@ preprocessData <- function(input = "",
   cat(' done\n\n')
   
   # Remove intermediate files
+  cat('Delete intermediate files... ')
   files <- list.files(output, full.names = TRUE)
   ind <- grepl("filtered_norm", files)
   file.remove(files[ind])
+  cat(' done\n\n')
   
   
   # Load rho
@@ -487,7 +485,7 @@ preprocessData <- function(input = "",
     load(paste(log,'/',plates,'_rho.Rdata',sep=''))
   } else {
     for(c in 1:length(plates)){
-      load(paste(log,'/',plates[i],'_rho.Rdata',sep=''))
+      load(paste(log,'/',plates[c],'_rho.Rdata',sep=''))
       
       if(c ==1){
         rho_tmp <- rho
@@ -497,7 +495,8 @@ preprocessData <- function(input = "",
     }
   }
   
-  if(exists(rho)){
+  
+  if(exists("rho")){
     rho <- rho_tmp
   }
   
@@ -509,7 +508,7 @@ preprocessData <- function(input = "",
     load(paste(log,'/',plates,'_ctrl.Rdata',sep=''))
   } else {
     for(c in 1:length(plates)){
-      load(paste(log,'/',plates[i],'_ctrl.Rdata',sep=''))
+      load(paste(log,'/',plates[c],'_ctrl.Rdata',sep=''))
       
       if(c ==1){
       ctrl_tmp_g <- ctrl_g
@@ -521,7 +520,29 @@ preprocessData <- function(input = "",
     }
   }
   
-  if(exists(ctrl_tmp_g)){
+  if(exists("ctrl_tmp_g")){
+    ctrl_g <- ctrl_tmp_g
+    ctrl_r <- ctrl_tmp_r
+  }
+  
+  # Load log
+  if(length(plates) == 1){
+    load(paste(log,'/',plates,'_log.Rdata',sep=''))
+  } else {
+    for(p in 1:length(plates)){
+      load(paste(log,'/',plates[p],'_log.Rdata',sep=''))
+      
+      if(c ==1){
+        ctrl_tmp_g <- ctrl_g
+        ctrl_tmp_r <- ctrl_r
+      } else {
+        ctrl_tmp_g <- cbind(ctrl_tmp_g, ctrl_g)
+        ctrl_tmp_r <- cbind(ctrl_tmp_r, ctrl_r)
+      }
+    }
+  }
+  
+  if(exists("ctrl_tmp_g")){
     ctrl_g <- ctrl_tmp_g
     ctrl_r <- ctrl_tmp_r
   }
