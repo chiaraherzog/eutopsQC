@@ -105,7 +105,7 @@ preprocessData <- function(input = "",
   cat('Path to output =',output,'\n')
   cat('Path to log file =',log,'\n')
   cat('Pheno present =', ifelse(is.null(pheno), "FALSE", "TRUE"), "\n")
-  cat('By directory = ', ifelse(is.null(pheno), "FALSE", "TRUE"), "\n\n")
+  cat('By directory = ', ifelse(by.dir == FALSE, "FALSE", "TRUE"), "\n\n")
   
   # Define global thresholds
   INTENSITY_THRESHOLD <- 9.5     # minimum median intensity required
