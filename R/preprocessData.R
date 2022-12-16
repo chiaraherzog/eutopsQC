@@ -311,7 +311,7 @@ preprocessData <- function(input = "",
     if(length(plates) != 1){
     save(beta_ssNOOB_filtered_norm, file=paste(output,'/',
                                                plates[i],'_beta_ssNOOB_filtered_norm.Rdata',sep=''))
-    }
+    } 
     
     save(detP, file=paste(log,'/',
                           plates[i],'_detP.Rdata',sep=''))
@@ -329,7 +329,7 @@ preprocessData <- function(input = "",
   }
   
   rm(RGset, p, detP, log_data, qc, beta_ssNOOB_filtered_norm, ssNOOB_filtered, beta_ssNOOB_filtered, 
-     beta_snp, d, genotypes, Mset, probeInfoALL.lv, RGset_filtered, summary, DETECTION_P_THRESHOLD,
+     beta_snp, d, genotypes, Mset, probeInfoALL.lv, RGset_filtered, DETECTION_P_THRESHOLD,
      FAILED_PROBE_THRESHOLD, failed_samples, INTENSITY_THRESHOLD, i, j, rm_ind, samples_to_remove);invisible(gc())
   
   cat('Beginning plate combination pipeline...\n\n')
@@ -385,12 +385,14 @@ preprocessData <- function(input = "",
   input_dir_list <- output
   
   #check beta matrices and detP matrices are present for each plate
-  for(p in plates){
-    if(!file.exists(paste(output,'/',p,'_beta_ssNOOB_filtered_norm.Rdata',sep=''))){
-      stop(paste('beta matrix for plate ',p,' is missing',sep=''))
-    }
-    if(!file.exists(paste(log,'/',p,'_detP.Rdata',sep=''))){
-      stop(paste('detP matrix for plate ',p,' is missing',sep=''))
+  if(length(plates)>1){
+    for(p in plates){
+      if(!file.exists(paste(output,'/',p,'_beta_ssNOOB_filtered_norm.Rdata',sep=''))){
+        stop(paste('beta matrix for plate ',p,' is missing',sep=''))
+      }
+      if(!file.exists(paste(log,'/',p,'_detP.Rdata',sep=''))){
+        stop(paste('detP matrix for plate ',p,' is missing',sep=''))
+      }
     }
   }
   
@@ -399,9 +401,11 @@ preprocessData <- function(input = "",
   beta_merged <- NULL
   
   for(p in plates){
-    if(length(plates != 1)){
+    
+    if(length(plates != 1)){ # load in extra file; if plates == 1, beta is still in environment
     load(paste(output,'/',p,'_beta_ssNOOB_filtered_norm.Rdata',sep=''))
     }
+    
     load(paste(log,'/',p,'_detP.Rdata',sep=''))
     
     # remove probes and any bad samples   
@@ -437,7 +441,6 @@ preprocessData <- function(input = "",
       rm(beta_plate_filtered_imputed);invisible(gc())
       
     } else {
-      
       beta_merged <- merge(beta_merged, beta_plate_filtered_imputed,
                            by.x='row.names', by.y='row.names', sort=FALSE)
       rm(beta_plate_filtered_imputed);invisible(gc())
