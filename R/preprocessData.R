@@ -47,7 +47,7 @@ preprocessData <- function(input = "",
   if(substr(report, nchar(report), nchar(report)) != "/"){
     report <- paste0(report, "/")
   }
-
+  
   log <- paste0(report, "Log")
   dir.create(log)
   
@@ -78,7 +78,7 @@ preprocessData <- function(input = "",
   }
   
   if(exists("pheno") && any(grepl(paste0(pheno$basename, collapse = "|"), list.files(input, pattern = ".idat", recursive = T, include.dirs = F)) == FALSE)){
-  stop("Pheno names not entirely overlappying with basenames")
+    stop("Pheno names not entirely overlappying with basenames")
   }
   
   # Begin pipeline
@@ -142,31 +142,31 @@ preprocessData <- function(input = "",
     
     # Reading in sample sheet and targets
     cat('Begin load idats...')
-      if (length(plates) == 1){
-          RGset <- read.metharray.exp(base = input,
-                                      verbose = T,
-                                      force = TRUE,
-                                      recursive = TRUE)
-      } else {
-          RGset <- read.metharray.exp(base = paste(input, plates[i], sep = ""),
-                                      verbose = T,
-                                      force = TRUE,
-                                      recursive = TRUE)
-      }
-        
+    if (length(plates) == 1){
+      RGset <- read.metharray.exp(base = input,
+                                  verbose = T,
+                                  force = TRUE,
+                                  recursive = TRUE)
+    } else {
+      RGset <- read.metharray.exp(base = paste(input, plates[i], sep = ""),
+                                  verbose = T,
+                                  force = TRUE,
+                                  recursive = TRUE)
+    }
+    
     # Add annotation for mouse array if required
-      if(grepl("mouse", array, ignore.case = T)){
-        suppressPackageStartupMessages(library(IlluminaMouseMethylationanno.12.v1.mm10))
-        suppressPackageStartupMessages(library(IlluminaMouseMethylationmanifest))
-        RGset@annotation <- c(array = "IlluminaMouseMethylation", annotation = "12.v1.mm10")
-      }
+    if(grepl("mouse", array, ignore.case = T)){
+      suppressPackageStartupMessages(library(IlluminaMouseMethylationanno.12.v1.mm10))
+      suppressPackageStartupMessages(library(IlluminaMouseMethylationmanifest))
+      RGset@annotation <- c(array = "IlluminaMouseMethylation", annotation = "12.v1.mm10")
+    }
     
     # Save shinyMethyl page
     if(create.shiny == T){
-        suppressPackageStartupMessages(library(shinyMethyl))
-        invisible(summary <- shinySummarize(RGset))
-    
-        save(summary, file = paste0(output, "/", plates[i], "_shinyMethyl.Rdata")) # This file can be opened later to run the shiny app
+      suppressPackageStartupMessages(library(shinyMethyl))
+      invisible(summary <- shinySummarize(RGset))
+      
+      save(summary, file = paste0(output, "/", plates[i], "_shinyMethyl.Rdata")) # This file can be opened later to run the shiny app
     }
     
     # Save the controls for later
@@ -306,11 +306,11 @@ preprocessData <- function(input = "",
                         plates[i],'_qc.Rdata',sep=''))
     
     save(ctrl_g, ctrl_r, ctrls, file=paste(log,'/',
-                                    plates[i],'_ctrl.Rdata',sep=''))
+                                           plates[i],'_ctrl.Rdata',sep=''))
     
     if(length(plates) != 1){
-    save(beta_ssNOOB_filtered_norm, file=paste(output,'/',
-                                               plates[i],'_beta_ssNOOB_filtered_norm.Rdata',sep=''))
+      save(beta_ssNOOB_filtered_norm, file=paste(output,'/',
+                                                 plates[i],'_beta_ssNOOB_filtered_norm.Rdata',sep=''))
     } 
     
     save(detP, file=paste(log,'/',
@@ -320,7 +320,7 @@ preprocessData <- function(input = "",
                        plates[i],'_beta_density_plot.Rdata',sep=''))
     
     save(rho, file=paste(log,'/',
-                       plates[i],'_rho.Rdata',sep=''))
+                         plates[i],'_rho.Rdata',sep=''))
     
     save(log_data, file=paste(log,'/',
                               plates[i],'_log_data.Rdata',sep=''))
@@ -328,7 +328,7 @@ preprocessData <- function(input = "",
     cat(' done\n\n')
   }
   
-  rm(RGset, p, detP, log_data, qc, beta_ssNOOB_filtered_norm, ssNOOB_filtered, beta_ssNOOB_filtered, 
+  rm(RGset, p, detP, log_data, qc, ssNOOB_filtered, beta_ssNOOB_filtered, 
      beta_snp, d, genotypes, Mset, probeInfoALL.lv, RGset_filtered, DETECTION_P_THRESHOLD,
      FAILED_PROBE_THRESHOLD, failed_samples, INTENSITY_THRESHOLD, i, j, rm_ind, samples_to_remove);invisible(gc())
   
@@ -402,8 +402,8 @@ preprocessData <- function(input = "",
   
   for(p in plates){
     
-    if(length(plates != 1)){ # load in extra file; if plates == 1, beta is still in environment
-    load(paste(output,'/',p,'_beta_ssNOOB_filtered_norm.Rdata',sep=''))
+    if(length(plates) != 1){ # load in extra file; if plates == 1, beta is still in environment
+      load(paste(output,'/',p,'_beta_ssNOOB_filtered_norm.Rdata',sep=''))
     }
     
     load(paste(log,'/',p,'_detP.Rdata',sep=''))
@@ -490,17 +490,22 @@ preprocessData <- function(input = "",
     for(c in 1:length(plates)){
       load(paste(log,'/',plates[c],'_rho.Rdata',sep=''))
       
-      if(c ==1){
+      if(c == 1){
         rho_tmp <- rho
       } else {
         rho_tmp <- rbind(rho_tmp, rho)
       }
     }
+    rho <- rho_tmp
   }
   
-  
-  if(exists("rho")){
-    rho <- rho_tmp
+  if(!exists("pheno")){
+    pheno <- data.frame(matrix(nrow = ncol(beta_merged),
+                               ncol = 3))
+    colnames(pheno) <- c("basename", "sentrix_id", "sentrix_pos")
+    pheno$basename <- colnames(beta_merged)
+    pheno$sentrix_id <- stringr::str_split(pheno$basename, "_", simplify = T)[,1]
+    pheno$sentrix_pos <- stringr::str_split(pheno$basename, "_", simplify = T)[,2]
   }
   
   pheno$rho <- numeric(length = nrow(pheno))
@@ -514,28 +519,6 @@ preprocessData <- function(input = "",
       load(paste(log,'/',plates[c],'_ctrl.Rdata',sep=''))
       
       if(c ==1){
-      ctrl_tmp_g <- ctrl_g
-      ctrl_tmp_r <- ctrl_r
-      } else {
-        ctrl_tmp_g <- cbind(ctrl_tmp_g, ctrl_g)
-        ctrl_tmp_r <- cbind(ctrl_tmp_r, ctrl_r)
-      }
-    }
-  }
-  
-  if(exists("ctrl_tmp_g")){
-    ctrl_g <- ctrl_tmp_g
-    ctrl_r <- ctrl_tmp_r
-  }
-  
-  # Load log
-  if(length(plates) == 1){
-    load(paste(log,'/',plates,'_log.Rdata',sep=''))
-  } else {
-    for(p in 1:length(plates)){
-      load(paste(log,'/',plates[p],'_log.Rdata',sep=''))
-      
-      if(c ==1){
         ctrl_tmp_g <- ctrl_g
         ctrl_tmp_r <- ctrl_r
       } else {
@@ -543,11 +526,30 @@ preprocessData <- function(input = "",
         ctrl_tmp_r <- cbind(ctrl_tmp_r, ctrl_r)
       }
     }
-  }
-  
-  if(exists("ctrl_tmp_g")){
+    
     ctrl_g <- ctrl_tmp_g
     ctrl_r <- ctrl_tmp_r
+  }
+  
+  
+  # Load log
+  if(length(plates) == 1){
+    load(paste(log,'/',plates,'_log_data.Rdata',sep=''))
+  } else {
+    for(p in 1:length(plates)){
+      load(paste(log,'/',plates[p],'_log_data.Rdata',sep=''))
+      
+      if(c == 1){
+        log_data_tmp <- log_data
+      } else {
+        
+        for(x in 1:length(log_data_tmp)){
+          log_data_tmp[[x]] <- c(log_data_tmp[[x]], log_data[[x]])
+        }
+      }
+      
+      log_data <- log_data_tmp
+    }
   }
   
   # Create a report
