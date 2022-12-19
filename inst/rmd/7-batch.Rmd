@@ -24,11 +24,10 @@ if(ncol(beta_merged)<=15){
  n <- 15 
 }
 
-umap <- uwot::umap(t(beta_merged[1:30000,]), n_neighbors = n)
-
-intersect <- intersect(rownames(umap), pheno$basename)
+intersect <- intersect(pheno$basename, colnames(beta_merged))
+beta_merged <- beta_merged[,match(intersect, colnames(beta_merged))]
 pheno <- pheno[match(intersect, pheno$basename),]
-umap <- umap[match(intersect, rownames(umap)),]
+umap <- uwot::umap(t(beta_merged[1:30000,]), n_neighbors = n)
 pheno$umap1 <- umap[,1]
 pheno$umap2 <- umap[,2]
 

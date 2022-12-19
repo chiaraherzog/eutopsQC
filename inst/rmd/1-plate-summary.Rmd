@@ -96,6 +96,7 @@ as.datatable(x, rownames = FALSE,
 rm <- pheno[match(log_data$rm_sample_list, pheno$basename),]
 
 rm |> 
+  dplyr::filter(!is.na(basename)) |> 
   DT::datatable()
 ```
 
