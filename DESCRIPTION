@@ -41,6 +41,7 @@ Imports:
     ChAMPdata,
     bumphunter,
     locfit, 
+    ggdist,
     iterators,
     foreach,
     Biostrings,
