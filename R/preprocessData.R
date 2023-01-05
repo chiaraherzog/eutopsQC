@@ -539,7 +539,7 @@ preprocessData <- function(input = "",
     for(p in 1:length(plates)){
       load(paste(log,'/',plates[p],'_log_data.Rdata',sep=''))
       
-      if(c == 1){
+      if(p == 1){
         log_data_tmp <- log_data
       } else {
         
