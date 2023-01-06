@@ -22,6 +22,7 @@ preprocessData <- function(input = "",
                            by.dir = FALSE,
                            path_to_bad_sample_list = "",
                            overwrite = FALSE,
+                           save.rs = FALSE,
                            create.shiny = F){
   
   # create Output folder
@@ -167,6 +168,12 @@ preprocessData <- function(input = "",
       invisible(summary <- shinySummarize(RGset))
       
       save(summary, file = paste0(output, "/", plates[i], "_shinyMethyl.Rdata")) # This file can be opened later to run the shiny app
+    }
+    
+    # Save RS (only if not mouse, otherwise will throw error)
+    if(save.rs == T & !grepl("mouse", array, ignore.case = T)){
+      rs <- getSnpBeta(RGset)
+      save(rs, file = paste0(log, "/", plates[i], "_rs.Rdata"))
     }
     
     # Save the controls for later
@@ -576,6 +583,37 @@ preprocessData <- function(input = "",
     rmarkdown::render(input = paste0(system.file("rmd", "7-batch.Rmd", package = "eutopsQC")),
                       output_file = paste0(report, "7-batch.html", sep = ""))
   }
+  
+  
+  
+  # Save snp
+  if(!grepl("mouse", array, ignore.case = T)){
+    if(length(plates) == 1){
+      load(paste(log,'/',plates,'_rs.Rdata',sep=''))
+    } else {
+      for(p in 1:length(plates)){
+        load(paste(log,'/',plates[p],'_rs.Rdata',sep=''))
+        
+        if(p == 1){
+          rs_tmp <- rs
+        } else {
+          rs_tmp <- cbind(rs_tmp, rs)
+        }
+        
+        rs <- rs_tmp
+      }
+    }
+  }
+  
+  # Save merged files
+  if(length(plates) != 1){
+    save(log_data, file = paste0(log, "/merged_log_data.Rdata"))
+    save(rho, file = paste0(log, "/merged_rho.Rdata"))
+    if(!grepl("mouse", array, ignore.case = T)){
+      save(rs, file = paste0(log, "/merged_rs.Rdata"))
+    }
+  }
+  
   
   cat('Session info:\n\n')
   print(sessionInfo())
