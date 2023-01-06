@@ -612,6 +612,9 @@ preprocessData <- function(input = "",
     if(!grepl("mouse", array, ignore.case = T)){
       save(rs, file = paste0(log, "/merged_rs.Rdata"))
     }
+    if(exists("pheno")){
+      save(pheno, file = paste0(log, "/pheno_qc.Rdata"))
+    }
   }
   
   
