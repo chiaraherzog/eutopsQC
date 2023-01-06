@@ -587,7 +587,7 @@ preprocessData <- function(input = "",
   
   
   # Save snp
-  if(!grepl("mouse", array, ignore.case = T)){
+  if(!grepl("mouse", array, ignore.case = T) && save.rs==T){
     if(length(plates) == 1){
       load(paste(log,'/',plates,'_rs.Rdata',sep=''))
     } else {
@@ -609,7 +609,7 @@ preprocessData <- function(input = "",
   if(length(plates) != 1){
     save(log_data, file = paste0(log, "/merged_log_data.Rdata"))
     save(rho, file = paste0(log, "/merged_rho.Rdata"))
-    if(!grepl("mouse", array, ignore.case = T)){
+    if(!grepl("mouse", array, ignore.case = T) && save.rs == T){
       save(rs, file = paste0(log, "/merged_rs.Rdata"))
     }
     if(exists("pheno")){
