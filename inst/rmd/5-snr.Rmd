@@ -107,26 +107,23 @@ if(exists("tmp") && "plate" %in% colnames(tmp)) {
   tmp1 <- tmp |> 
     dplyr::group_by(plate) |> 
     dplyr::summarise(plate = unique(plate),
-                     y = quantile(rho, probs = 0.8))
+                     y = max(rho))
   
   
   tmp |> 
     ggplot(aes(x = plate,
                y = rho,
-             colour = plate,
-             label = plate)) +
+               colour = plate,
+               label = plate)) +
   ggdist::stat_pointinterval(size = 0.3) +
-  # geom_boxplot(width = 0.5,
-  #              outlier.shape = NA) +
-  # geom_violin(aes(fill = plate)) +
-  # geom_boxplot(width = 0.1) +
   theme(legend.position = "none",
         axis.text.x = element_blank(),
         axis.ticks.x = element_blank())  +
     ggrepel::geom_label_repel(data = tmp1,
                               x = 1:length(unique(tmp1$plate)),
                               y = tmp1$y,
-                              label = tmp1$plate)
+                              label = tmp1$plate,
+                              alpha = 0.7)
                               
   }
 
