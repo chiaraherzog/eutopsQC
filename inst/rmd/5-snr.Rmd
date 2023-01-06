@@ -72,7 +72,7 @@ if(rows > 20){
   ggplotly(p)
 }
 
-if(exists("tmp") & "plate" %in% colnames(tmp)) {
+if(exists("tmp") && "plate" %in% colnames(tmp)) {
   p <- tmp |> 
     ggplot(aes(x = rho,
                colour = plate)) +
@@ -102,7 +102,7 @@ rho |>
         axis.text.x = element_blank(),
         axis.ticks.x = element_blank()) 
 
-if(exists("tmp") & "plate" %in% colnames(tmp)) {
+if(exists("tmp") && "plate" %in% colnames(tmp)) {
   
   tmp1 <- tmp |> 
     dplyr::group_by(plate) |> 
@@ -136,7 +136,7 @@ if(exists("tmp") & "plate" %in% colnames(tmp)) {
 ## Individual samples
 
 ```{r fig.align = "center", fig.width = 10, fig.height=height}
-if(exists("tmp") & "plate" %in% colnames(tmp)) {
+if(exists("tmp") && "plate" %in% colnames(tmp)) {
   x <- tmp |>
   ggplot(aes(x = basename,
              y = rho)) +
