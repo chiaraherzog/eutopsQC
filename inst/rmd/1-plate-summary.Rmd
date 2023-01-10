@@ -93,7 +93,8 @@ as.datatable(x, rownames = FALSE,
 ## List of removed samples
 
 ```{r}
-rm <- pheno[match(log_data$rm_sample_list, pheno$basename),]
+rm <- pheno[match(na.omit(log_data$rm_sample_list), pheno$basename),] |> 
+  distinct()
 
 rm |> 
   dplyr::filter(!is.na(basename)) |> 
