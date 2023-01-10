@@ -25,6 +25,16 @@ preprocessData <- function(input = "",
                            save.rs = FALSE,
                            create.shiny = F){
   
+  # Install packages
+
+  if (require("devtools")){
+    install.packages("devtools")
+  }
+  
+  if (!require("ewastools")){
+      devtools::install_github("hhhh5/ewastools")
+  }
+  
   # create Output folder
   if(dir.exists(output)){
     NULL

@@ -24,7 +24,7 @@ Imports:
     shiny, 
     kableExtra,
     stringr,
-    ewastools,
+    formattable,
     plotly,
     ggplot2, 
     impute,
