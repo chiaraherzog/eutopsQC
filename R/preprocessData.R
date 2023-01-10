@@ -559,6 +559,11 @@ preprocessData <- function(input = "",
     }
   }
   
+  if(length(plates) != 1){
+  save(log_data, file = paste0(log, "/merged_log_data.Rdata"))
+  save(rho, file = paste0(log, "/merged_rho.Rdata"))
+  }
+  
   # Create a report
   cat('Creating RMarkdown Report...\n')
   file.copy(from = paste0(system.file("rmd", "_site.yml", package = "eutopsQC")),
@@ -607,8 +612,6 @@ preprocessData <- function(input = "",
   
   # Save merged files
   if(length(plates) != 1){
-    save(log_data, file = paste0(log, "/merged_log_data.Rdata"))
-    save(rho, file = paste0(log, "/merged_rho.Rdata"))
     if(!grepl("mouse", array, ignore.case = T) && save.rs == T){
       save(rs, file = paste0(log, "/merged_rs.Rdata"))
     }
