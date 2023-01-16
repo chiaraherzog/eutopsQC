@@ -3,7 +3,7 @@ title: "4. Beta distributions"
 output:
   html_document:
     code_folding: "hide"
-    theme: simplex
+    theme: lumen
 ---
 
 ```{r setup, include=FALSE}
@@ -16,10 +16,8 @@ library(plotly)
 path <- log
 ```
 
-* Beta densities after:
-    + Background intensity correction (minfi::ssNOOB)
-    + Dye bias correction (minfi::ssNOOB)
-    + Probe type bias correction (ChAMP::BMIQ)
+
+This page shows methylation beta value densities after Background intensity correction (minfi::ssNOOB), Dye bias correction (minfi::ssNOOB), and Probe type bias correction (ChAMP::BMIQ).
 
 ```{r, warning = FALSE, message=FALSE}
 input_dir_list <- dir(path)

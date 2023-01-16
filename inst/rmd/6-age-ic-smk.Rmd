@@ -3,7 +3,7 @@ title: "6. ic - age - smoking"
 output:
   html_document:
     code_folding: "hide"
-    theme: simplex
+    theme: lumen
 ---
 
 ```{r setup, include=FALSE}
@@ -14,7 +14,9 @@ library(EpiDISH)
 library(WIDclocks)
 ```
 
-# ic
+This page provides information on estimated immune cell composition, WID age, and methylation of a CpG associated with smoking.
+
+# Estimated immune cell composition
 
 ```{r fig.align = "center", fig.width = 6, fig.height = 4.5}
 if(any(grepl("_BC11", rownames(beta_merged)))){
@@ -26,9 +28,9 @@ if(any(grepl("_BC11", rownames(beta_merged)))){
                  ref.m = centEpiFibIC.m,
                  method = "RPC")$estF
   
-  plot <- out %>%
-    as.data.frame() %>%
-    tibble::rownames_to_column("basename") %>%
+  plot <- out |>
+    as.data.frame() |>
+    tibble::rownames_to_column("basename") |>
     ggplot(aes(x = basename,
                y = IC,
                colour = basename)) +
@@ -42,44 +44,65 @@ if(any(grepl("_BC11", rownames(beta_merged)))){
 
 # age
 
+
+
 ```{r fig.align = "center", fig.width = 6, fig.height = 4.5}
+
+
 if(any(grepl("_BC11", rownames(beta_merged)))){
   
   print("Mouse array - to be defined")
   
 } else {
-
-  source("~/Dropbox/src/DNAm-tools/age_index.R")
-  
   if(exists("pheno") && any(colnames(pheno) == "age")){
     intersect <- intersect(colnames(beta_merged), pheno$basename)
     pheno <- pheno[match(intersect, pheno$basename),]
     beta_merged <- beta_merged[,match(intersect, colnames(beta_merged))]
-    pheno$index <- WID_clocks(beta_merged)$WID_general_clock 
-    plot <- pheno %>%
+    pheno$widage <- WID_clocks(beta_merged)$WID_general_clock 
+    
+    if(all(pheno$widage>0)){
+      ylim = c(0, 90)
+    } else {
+      ylim <- c(min(pheno$widage)+min(pheno$widage)*0.9, max(pheno$widage)+max(pheno$widage*0.9))
+    }
+    
+    plot <- pheno |> 
       ggplot(aes(x = age,
-                 y = index,
+                 y = widage,
                colour = basename)) +
       geom_point() +
       xlim(0, 90) + ylim(0, 90) +
-      xlab("WID-general age")
+      xlab("WID-general age") +
+      theme(axis.text.x = element_text(angle = 60,
+            hjust = 0))
     
-    ggplotly(plot)
+    plotly::ggplotly(plot)
   } else {
     widage <- WID_clocks(beta_merged)$WID_general_clock 
     
     tmp <- data.frame(age = widage, 
-               basename = names(widage))
+                      basename = names(widage))
     
-    plot <- tmp %>%
+    if(all(widage>0)){
+      ylim = c(0, 90)
+    } else {
+      ylim <- c(min(widage)+min(widage)*0.9, max(widage)+max(widage*0.9))
+    }
+    
+    plot <- tmp |> 
       ggplot(aes(x = as.factor(basename),
                  y = age,
                  colour = as.factor(basename))) +
       geom_point() +
       theme(legend.position = "none") +
-      xlab("") + ylim(0, 90)
+      xlab("") + ylim(ylim) +
+      geom_hline(yintercept = 0, linetype = "dotted",
+                 colour = "grey40",
+                 size = 0.5) +
+      theme(axis.text.x = element_text(angle = 60,
+            hjust = 0))
     
-    ggplotly(plot)
+    plotly::ggplotly(plot)
   }
 }
 
@@ -98,7 +121,7 @@ if(any(grepl("_BC11", rownames(beta_merged)))){
     pheno <- pheno[match(intersect, pheno$basename),]
     beta_merged <- beta_merged[,match(intersect, colnames(beta_merged))]
     pheno$index <- as.numeric(beta_merged["cg16867657",])
-    plot <- pheno %>%
+    plot <- pheno |>
       ggplot(aes(x = smoking,
                  y = index,
                colour = basename)) +
@@ -110,7 +133,7 @@ if(any(grepl("_BC11", rownames(beta_merged)))){
     tmp <- data.frame(smk = as.numeric(beta_merged["cg16867657",]), 
                basename = colnames(beta_merged))
     
-    plot <- tmp %>%
+    plot <- tmp |>
       ggplot(aes(x = as.factor(basename),
                  y = smk,
                  colour = as.factor(basename))) +

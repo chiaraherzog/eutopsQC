@@ -9,7 +9,11 @@
 #' @param output Path to output directory (this is where beta file will be saved)
 #' @param report Path to report directory (this is where the report will be saved to)
 #' @param array Methylation array type, EPIC by default
-#' @param pheno Phenotypic file. NULL by default. If pheno file is provided, it must have a column named basename with identical names to IDAT files. File can be provided as Rdata, RDS, .txt or .csv. Each column will be included in the batch effect correction. Ensure that no column exists with entirely identical variables.
+#' @param cores cores to be used for ChAMP normalisation
+#' @param pheno phenotypic file. NULL by default. If pheno file is provided, it must have a column named basename with identical names to IDAT files. File can be provided as Rdata, RDS, .txt or .csv. Each column will be included in the batch effect correction. Ensure that no column exists with entirely identical variables
+#' @param by.dir process by directory instead. FALSE by default. The result will not be different, but by.dir = T can be slower (for smaller projects), yet it is recommended for large projects.
+#' @param overwrite overwrite existing output folder. FALSE by default to prevent any accidental overwriting.
+#' @param save.rs save SNP (rs) probe values. FALSE by default.
 #' @return preprocessed beta matrix and QC report
 #' @export
 
@@ -27,7 +31,7 @@ preprocessData <- function(input = "",
   
   # Install packages
 
-  if (require("devtools")){
+  if (!require("devtools")){
     install.packages("devtools")
   }
   
@@ -578,8 +582,9 @@ preprocessData <- function(input = "",
   cat('Creating RMarkdown Report...\n')
   file.copy(from = paste0(system.file("rmd", "_site.yml", package = "eutopsQC")),
             to = report)
-  file.copy(from = paste0(system.file("rmd", "index.Rmd", package = "eutopsQC")),
-            to = report)
+  rmarkdown::render(input = paste0(system.file("rmd", "index.Rmd",
+                                               package = "eutopsQC")), 
+                    output_file = paste0(report, "index.html", sep = ""))
   rmarkdown::render(input = paste0(system.file("rmd", "1-plate-summary.Rmd",
                                                package = "eutopsQC")), 
                     output_file = paste0(report, "1-plate-summary.html", sep = ""))
@@ -595,8 +600,8 @@ preprocessData <- function(input = "",
   rmarkdown::render(input = paste0(system.file("rmd", "6-age-ic-smk.Rmd", package = "eutopsQC")),
                     output_file = paste0(report, "6-age-ic-smk.html", sep = ""))
   if(exists("pheno")){
-    rmarkdown::render(input = paste0(system.file("rmd", "7-batch.Rmd", package = "eutopsQC")),
-                      output_file = paste0(report, "7-batch.html", sep = ""))
+    rmarkdown::render(input = paste0(system.file("rmd", "7-dimensred.Rmd", package = "eutopsQC")),
+                      output_file = paste0(report, "7-dimensred.html", sep = ""))
   }
   
   

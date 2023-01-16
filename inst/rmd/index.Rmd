@@ -2,5 +2,15 @@
 title: "QC report"
 output:
   html_document:
-    theme: simplex
+    theme: lumen
 ---
+
+This report is automatically generated with the eutopsQC pipeline during DNA methylation data quality control. The interactive pages provide the following information:
+
+1. Overview of failed samples and probe count by beadchip.
+2. Plots of control probes on the Illumina Methylation array.
+3. Raw fluorescence intensities.
+4. Methylation beta value distribution.
+5. Signal to noise ratio (quality control metric, primarily applicable to biobanked samples).
+6. Overview of estimated immune cell composition (ic), age, and smoking CpG methylation (primarily applicable to patient samples).
+7. Dimensionality reduction and clustering.

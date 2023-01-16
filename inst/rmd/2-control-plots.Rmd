@@ -3,7 +3,7 @@ title: "2. Control plots"
 output:
   html_document:
     code_folding: "hide"
-    theme: simplex
+    theme: lumen
 ---
 
 ```{r setup, include=FALSE}
@@ -23,6 +23,8 @@ len <- case_when(ncol(ctrl_g) <= 32 ~ 9,
 
 
 ```
+
+This page shows values of Illumina Methylation array control probes.
 
 <center>
 

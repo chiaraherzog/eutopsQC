@@ -1,9 +1,9 @@
 ---
-title: "7. Batch effects"
+title: "7. Dimensionality reduction"
 output:
   html_document:
     code_folding: "hide"
-    theme: simplex
+    theme: paper
 ---
 
 ```{r setup, include=FALSE}
@@ -15,9 +15,16 @@ library(ggplot2)
 library(uwot)
 ```
 
+Two methods (linear and non-linear) are used for dimensionality reduction, which both have advantages and disadvantages:
+
+1. UMAP (Uniform manifold approximation and projection): non-linear dimensionality reduction
+2. Multidimensional scaling (principal component analysis): linear dimensionality reduction
+
+A heatmap of p values for principal components and (if provided, their association with provided phenotypic values) is shown on the bottom of the page to identify potential batch effects.
+
 # UMAP
 
-```{r fig.align = "center", fig.width = 4.5, fig.height = 4.5}
+```{r fig.align = "center", fig.width = 4.5, fig.height = 6}
 if(ncol(beta_merged)<=15){
   n <- ncol(beta_merged)
 } else {
@@ -33,7 +40,7 @@ pheno$umap2 <- umap[,2]
 
 variables <- colnames(pheno)[!colnames(pheno) %in% c("basename",
                                                      "umap1",
-                                                     "umap2")]
+                                                     "umap2", "widage")]
 
 plt <- htmltools::tagList()
 i <- 1
@@ -44,7 +51,8 @@ for (var in variables){
                colour = .data[[var]])) +
     geom_point() +
     ggtitle(var) +
-    theme(legend.title = element_blank())
+    theme(legend.title = element_blank(),
+          aspect.ratio = 1)
   
   # Print an interactive plot
   # Add to list
@@ -65,23 +73,24 @@ fit <- cmdscale(d,eig=TRUE, k=2)
 x <- fit$points[,1]
 y <- fit$points[,2]
 
-pheno$x <- x
-pheno$y <- y
+pheno$pc1 <- x
+pheno$pc2 <- y
 
 variables <- colnames(pheno)[!colnames(pheno) %in% c("basename",
                                                      "umap1",
                                                      "umap2",
-                                                     "x", "y")]
+                                                     "pc1", "pc2", "widage")]
 plt <- htmltools::tagList()
 i <- 1
 for (var in variables){
   x <- pheno %>%
-    ggplot(aes(x = x,
-               y= y,
+    ggplot(aes(x = pc1,
+               y = pc2,
                colour = .data[[var]])) +
     geom_point() +
     ggtitle(var) +
-    theme(legend.title = element_blank())
+    theme(legend.title = element_blank(),
+          aspect.ratio = 1)
   
   plt[[i]] <- as_widget(ggplotly(x))
   i <- i + 1
@@ -104,7 +113,7 @@ if(ncol(beta_merged)<=10){
 
 pdat <- pheno %>%
   dplyr::select(where(~ length(unique(na.omit(.)))>1)) |>  # Keep only columns which have more than one unique value for batch effect analysis.
-  dplyr::select(-c(basename, umap1, umap2, x, y)) |> 
+  dplyr::select(-c(basename, umap1, umap2, pc1, pc2)) |> 
   mutate_if(is.character,as.factor) |> 
   as.data.frame()
 

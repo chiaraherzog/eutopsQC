@@ -3,7 +3,7 @@ title: "3. Array intensities"
 output:
   html_document:
     code_folding: "hide"
-    theme: simplex
+    theme: lumen
 ---
 
 ```{r setup, include=FALSE}
@@ -17,8 +17,9 @@ library(kableExtra)
 path <- log
 ```
 
-## Plot of median intensities
+This page shows raw fluorescence intensities of samples prior to correction and beta value conversion.
 
+## Plot of median intensities
 
 ```{r,echo=FALSE,message=FALSE, warning = FALSE}
 input_dir_list <- dir(path)

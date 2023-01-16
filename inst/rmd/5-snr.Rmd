@@ -3,8 +3,11 @@ title: "5. Signal-to-noise"
 output:
   html_document:
     code_folding: "hide"
-    theme: simplex
+    theme: lumen
 ---
+
+This page provides information on the estimated signal to noise ratio, which can be useful to explore storage effects on biobank samples or other control metrics. Signal to noise ratio parameter may be specific to cell types and is currently undergoing further refinement.
+
 
 ```{r setup, include=FALSE}
 # rmarkdown::render_site()
