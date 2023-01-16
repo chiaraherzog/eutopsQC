@@ -9,7 +9,7 @@
 #' @param output Path to output directory (this is where beta file will be saved)
 #' @param report Path to report directory (this is where the report will be saved to)
 #' @param array Methylation array type, EPIC by default
-#' @param cores cores to be used for ChAMP normalisation
+#' @param cores cores to be used for ChAMP normalisation. 4 by default
 #' @param pheno phenotypic file. NULL by default. If pheno file is provided, it must have a column named basename with identical names to IDAT files. File can be provided as Rdata, RDS, .txt or .csv. Each column will be included in the batch effect correction. Ensure that no column exists with entirely identical variables
 #' @param by.dir process by directory instead. FALSE by default. The result will not be different, but by.dir = T can be slower (for smaller projects), yet it is recommended for large projects.
 #' @param overwrite overwrite existing output folder. FALSE by default to prevent any accidental overwriting.
