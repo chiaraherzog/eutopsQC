@@ -34,7 +34,15 @@ if(ncol(beta_merged)<=15){
 intersect <- intersect(pheno$basename, colnames(beta_merged))
 beta_merged <- beta_merged[,match(intersect, colnames(beta_merged))]
 pheno <- pheno[match(intersect, pheno$basename),]
-umap <- uwot::umap(t(beta_merged[1:30000,]), n_neighbors = n)
+
+# Grab top 20000 variable CpGs
+x <- matrixStats::rowSds(beta_merged)
+names(x) <- rownames(beta_merged)
+top10 <- x[order(x, decreasing = T)][1:30000]
+b <- beta_merged[names(top10),]
+
+
+umap <- uwot::umap(t(b), n_neighbors = n)
 pheno$umap1 <- umap[,1]
 pheno$umap2 <- umap[,2]
 
@@ -67,7 +75,7 @@ plt
 # MDS plots
 
 ```{r fig.align = "center", fig.width = 4.5, fig.height = 4.5}
-d <- dist(t(beta_merged[1:30000,]))
+d <- dist(t(b))
 fit <- cmdscale(d,eig=TRUE, k=2)
 
 x <- fit$points[,1]
