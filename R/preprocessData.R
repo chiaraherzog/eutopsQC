@@ -46,7 +46,7 @@ preprocessData <- function(input = "",
     dir.create(output, recursive = TRUE)
     cat(paste0("Output folder ", output, " created.\n"))
   }
-  if(grepl("beta_merged.Rdata", list.files(output)) & overwrite == FALSE){
+  if("beta_merged.Rdata" %in% list.files(output) & overwrite == FALSE){
     stop("Output folder is not empty, continuing would overwrite existing results.")
   }
   
