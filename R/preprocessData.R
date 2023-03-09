@@ -46,7 +46,7 @@ preprocessData <- function(input = "",
     dir.create(output, recursive = TRUE)
     cat(paste0("Output folder ", output, " created.\n"))
   }
-  if(length(list.files(output))>0 & overwrite == FALSE){
+  if(grepl("beta_merged.Rdata", list.files(output)) & overwrite == FALSE){
     stop("Output folder is not empty, continuing would overwrite existing results.")
   }
   
@@ -630,9 +630,10 @@ preprocessData <- function(input = "",
     if(!grepl("mouse", array, ignore.case = T) && save.rs == T){
       save(rs, file = paste0(log, "/merged_rs.Rdata"))
     }
-    if(exists("pheno")){
-      save(pheno, file = paste0(log, "/pheno_qc.Rdata"))
-    }
+  }
+  
+  if(exists("pheno")){
+    save(pheno, file = paste0(log, "/pheno_qc.Rdata"))
   }
   
   

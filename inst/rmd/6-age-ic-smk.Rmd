@@ -72,7 +72,7 @@ if(any(grepl("_BC11", rownames(beta_merged)))){
                colour = basename)) +
       geom_point() +
       xlim(0, 90) + ylim(0, 90) +
-      xlab("WID-general age") +
+      xlab("chronological age") + ylab("WID-general age") +
       theme(axis.text.x = element_text(angle = 60,
             hjust = 0))
     

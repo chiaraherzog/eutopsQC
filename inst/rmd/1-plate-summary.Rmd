@@ -63,16 +63,18 @@ log_df$Probe_count <- paste0(nrow(beta_merged), " / ",
                              log_data$n_probes[1],
                              " (", round(nrow(beta_merged)/log_data$n_probes*100, 1), "%)")
 
+b <- pheno$basename
+sentrix_id <- stringr::str_split(b, "_", simplify = T)[,1]
 
 for (i in 1:nrow(log_df)){
   
   if(any(grepl(log_df$Beadchip[i], log_data$rm_sample_list))){
     tmp <- log_data$rm_sample_list[grepl(log_df$Beadchip[i], log_data$rm_sample_list)]
-    log_df$Sample_count[i] <- 8-length(tmp)
+    log_df$Sample_count[i] <- sum(sentrix_id == log_df$Beadchip[i])-length(tmp)
     log_df$Removed_sample_count[i] <- paste0(length(tmp), " (",
                                           length(tmp)/8*100, "%)")
     } else {
-    log_df$Sample_count[i] <- 8
+    log_df$Sample_count[i] <- sum(sentrix_id == log_df$Beadchip[i])
     log_df$Removed_sample_count[i] <- "0 (0%)"
   }
   
@@ -89,11 +91,11 @@ colnames(log_df) <- c('Beadchip',
 x <- log_df |> 
   formattable(list(
               Beadchip = formatter("span",
-                                   style = x ~ style(color = ifelse(log_df$Samples == 8, "seagreen", "palevioletred"))),
+                                   style = x ~ style(color = ifelse(log_df$`Removed samples` == "0 (0%)", "seagreen", "palevioletred"))),
               Samples = formatter("span", 
-                                           x ~ icontext(ifelse(x == 8, "ok", "remove"),
+                                           x ~ icontext(ifelse(log_df$`Removed samples` == "0 (0%)", "ok", "remove"),
                                                         x), 
-                                           style = x ~ style(color = ifelse(x == 8, "seagreen", "palevioletred"))),
+                                           style = x ~ style(color = ifelse(log_df$`Removed samples` == "0 (0%)", "seagreen", "palevioletred"))),
               Probes = formatter("span",
                                  style = x ~ style(color = ifelse(readr::parse_number(stringr::str_extract_all(log_df$Probes, "\\([^()]+\\)")[[1]]) > 80, "seagreen",
                                                           "palevioletred")))))
