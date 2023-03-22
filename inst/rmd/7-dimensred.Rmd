@@ -111,10 +111,10 @@ plt
 # PCA
 
 ```{r}
-fit <- prcomp(t(beta_merged[1:30000,]),retx=TRUE,scale.=FALSE,center=TRUE)
+fit <- prcomp(t(b[1:30000,]),retx=TRUE,scale.=FALSE,center=TRUE)
 
-if(ncol(beta_merged)<=10){
-  P <- ncol(beta_merged)-1
+if(ncol(b)<=10){
+  P <- ncol(b)-1
   } else {
     P <- 10
 } # gives first P principal components

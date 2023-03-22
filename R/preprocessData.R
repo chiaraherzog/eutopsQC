@@ -602,6 +602,7 @@ preprocessData <- function(input = "",
   if(exists("pheno")){
     rmarkdown::render(input = paste0(system.file("rmd", "7-dimensred.Rmd", package = "eutopsQC")),
                       output_file = paste0(report, "7-dimensred.html", sep = ""))
+    save(pheno, file = paste0(log, "/pheno_qc.Rdata"))
   }
   
   
@@ -630,10 +631,6 @@ preprocessData <- function(input = "",
     if(!grepl("mouse", array, ignore.case = T) && save.rs == T){
       save(rs, file = paste0(log, "/merged_rs.Rdata"))
     }
-  }
-  
-  if(exists("pheno")){
-    save(pheno, file = paste0(log, "/pheno_qc.Rdata"))
   }
   
   
