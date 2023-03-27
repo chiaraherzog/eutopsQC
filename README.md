@@ -15,8 +15,8 @@ Preprocessing pipeline for raw epigenetic data from raw IDAT (.idat) to a prepro
 ## Installation
 
 ```r
-if (!requireNamespace("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
+if (!requireNamespace("devtools", quietly = TRUE))
+    install.packages("devtools")
 
-BiocManager::install("chiaraherzog/eutopsQC")
+devtools::install_github("chiaraherzog/eutopsQC")
 ```
