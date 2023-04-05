@@ -41,7 +41,7 @@ qc_merged <- as.data.frame(qc_merged) |>
                                  "removed", "retained"))
 
 # save merged QC
-save(qc_merged, file = paste(path, '/qc_merged.Rdata'))
+save(qc_merged, file = paste0(path, '/qc_merged.Rdata'))
 
 p <- qc_merged |> 
   ggplot(aes(x = mMed, y = uMed,
@@ -64,7 +64,7 @@ plotly::ggplotly(p)
 * Samples with too many failed probes
 
 ```{r}
-ind <- match(rm_samples[!is.na(rm_samples)],rownames(qc_merged))
+ind <- match(rm_samples[!is.na(rm_samples)],qc_merged$basename)
 
 if (length(ind)>0){
    kable(qc_merged[ind,])%>%
