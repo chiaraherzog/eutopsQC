@@ -13,6 +13,18 @@ library(plotly)
 library(dplyr)
 library(ggplot2)
 library(uwot)
+
+coerce_numeric <- function(beta_merged){
+    beta_merged_tmp <- matrix(NA, nrow=nrow(beta_merged), ncol=ncol(beta_merged))
+    for(i in 1:ncol(beta_merged)){
+      beta_merged_tmp[,i] <- as.numeric(beta_merged[,i])
+    }
+    colnames(beta_merged_tmp) <- colnames(beta_merged)
+    rownames(beta_merged_tmp) <- rownames(beta_merged)
+    beta_merged <- beta_merged_tmp
+    rm(beta_merged_tmp);gc()
+    return(beta_merged)
+}
 ```
 
 Two methods (linear and non-linear) are used for dimensionality reduction, which both have advantages and disadvantages:
@@ -30,6 +42,8 @@ if(ncol(beta_merged)<=15){
 } else {
  n <- 15 
 }
+
+beta_merged <- coerce_numeric(beta_merged)
 
 intersect <- intersect(pheno$basename, colnames(beta_merged))
 beta_merged <- beta_merged[,match(intersect, colnames(beta_merged))]

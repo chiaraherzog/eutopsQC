@@ -11,12 +11,8 @@ output:
 knitr::opts_chunk$set(echo = FALSE, message = F, warning = F)
 library(kableExtra)
 library(formattable)
-
+library(eutopsQC)
 path <- log
-load("~/Documents/Work/Code/preprocessing/eutopsQC/data/chrY_names.rda")
-load("~/Documents/Work/Code/preprocessing/eutopsQC/data/non_CpG_names.rda")
-load("~/Documents/Work/Code/preprocessing/eutopsQC/data/snp_names.rda")
-load("~/Documents/Work/Code/preprocessing/eutopsQC/data/zhou_list.rda")
 
 rm_names <- unique(c(chrY_names,non_CpG_names,snp_names,zhou_list))
 ```
@@ -61,7 +57,7 @@ if(sum(grepl('_log_data.Rdata',files))==1){
 
 log_df$Probe_count <- paste0(nrow(beta_merged), " / ",
                              log_data$n_probes[1],
-                             " (", round(nrow(beta_merged)/log_data$n_probes*100, 1), "%)")
+                             " (", round(nrow(beta_merged)/log_data$n_probes[1]*100, 1), "%)")
 
 b <- pheno$basename
 sentrix_id <- stringr::str_split(b, "_", simplify = T)[,1]
@@ -88,13 +84,13 @@ colnames(log_df) <- c('Beadchip',
 # kable(log_df)%>%
 #   kable_styling(bootstrap_options = c("striped", "hover"))
 
-x <- log_df |> 
+x <- log_df |>
   formattable(list(
               Beadchip = formatter("span",
                                    style = x ~ style(color = ifelse(log_df$`Removed samples` == "0 (0%)", "seagreen", "palevioletred"))),
-              Samples = formatter("span", 
+              Samples = formatter("span",
                                            x ~ icontext(ifelse(log_df$`Removed samples` == "0 (0%)", "ok", "remove"),
-                                                        x), 
+                                                        x),
                                            style = x ~ style(color = ifelse(log_df$`Removed samples` == "0 (0%)", "seagreen", "palevioletred"))),
               Probes = formatter("span",
                                  style = x ~ style(color = ifelse(readr::parse_number(stringr::str_extract_all(log_df$Probes, "\\([^()]+\\)")[[1]]) > 80, "seagreen",
@@ -107,7 +103,7 @@ as.datatable(x, rownames = FALSE,
 ## List of removed samples
 
 ```{r}
-if(!is.na(log_data$rm_sample_list)){
+if((length(log_data$rm_sample_list)>0 & !is.na(paste0(log_data$rm_sample_list, collapse = ",")))){
 rm <- pheno[match(na.omit(log_data$rm_sample_list), pheno$basename),] |> 
   dplyr::distinct()
 
