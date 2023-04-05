@@ -98,6 +98,9 @@ y <- fit$points[,2]
 pheno$pc1 <- x
 pheno$pc2 <- y
 
+# Save pheno
+save(pheno, file = paste0(log, "/pheno_qc.Rdata"))
+
 variables <- colnames(pheno)[!colnames(pheno) %in% c("basename",
                                                      "umap1",
                                                      "umap2",

@@ -81,23 +81,23 @@ colnames(log_df) <- c('Beadchip',
                       'Probes',
                       'Removed samples')
 
-# kable(log_df)%>%
-#   kable_styling(bootstrap_options = c("striped", "hover"))
+kable(log_df) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
 
-x <- log_df |>
-  formattable(list(
-              Beadchip = formatter("span",
-                                   style = x ~ style(color = ifelse(log_df$`Removed samples` == "0 (0%)", "seagreen", "palevioletred"))),
-              Samples = formatter("span",
-                                           x ~ icontext(ifelse(log_df$`Removed samples` == "0 (0%)", "ok", "remove"),
-                                                        x),
-                                           style = x ~ style(color = ifelse(log_df$`Removed samples` == "0 (0%)", "seagreen", "palevioletred"))),
-              Probes = formatter("span",
-                                 style = x ~ style(color = ifelse(readr::parse_number(stringr::str_extract_all(log_df$Probes, "\\([^()]+\\)")[[1]]) > 80, "seagreen",
-                                                          "palevioletred")))))
-
-as.datatable(x, rownames = FALSE,
-             options = list(pageLength = 10))
+# x <- log_df |>
+#   formattable::formattable(list(
+#               Beadchip = formatter("span",
+#                                    style = x ~ style(color = ifelse(log_df$`Removed samples` == "0 (0%)", "seagreen", "palevioletred"))),
+#               Samples = formatter("span",
+#                                            x ~ icontext(ifelse(log_df$`Removed samples` == "0 (0%)", "ok", "remove"),
+#                                                         x),
+#                                            style = x ~ style(color = ifelse(log_df$`Removed samples` == "0 (0%)", "seagreen", "palevioletred"))),
+#               Probes = formatter("span",
+#                                  style = x ~ style(color = ifelse(readr::parse_number(stringr::str_extract_all(log_df$Probes, "\\([^()]+\\)")[[1]]) > 80, "seagreen",
+#                                                           "palevioletred")))))
+# 
+# as.datatable(x, rownames = FALSE,
+#              options = list(pageLength = 10))
 ```
 
 ## List of removed samples

@@ -48,90 +48,90 @@ if(exists("pheno") & "plate" %in% colnames(pheno)){
 
 # Plots {.tabset .tabset-fade}
 
-## Density plot
+<!-- ## Density plot -->
 
-```{r fig.align = "center", fig.width = 8, fig.height = 4}
-p <- rho |> 
-  tibble::rownames_to_column("basename") |>
-  mutate(sentrix = stringr::str_split(basename, "_", simplify = TRUE)[,1]) |> 
-  ggplot(aes(x = rho,
-             colour = sentrix)) +
-  geom_density(bw = 0.2) +
-  theme_minimal() +
-  theme(legend.position = "none")
+<!-- ```{r fig.align = "center", fig.width = 8, fig.height = 4} -->
+<!-- p <- rho |>  -->
+<!--   tibble::rownames_to_column("basename") |> -->
+<!--   mutate(sentrix = stringr::str_split(basename, "_", simplify = TRUE)[,1]) |>  -->
+<!--   ggplot(aes(x = rho, -->
+<!--              colour = sentrix)) + -->
+<!--   geom_density(bw = 0.2) + -->
+<!--   theme_minimal() + -->
+<!--   theme(legend.position = "none") -->
 
-ggplotly(p)
+<!-- ggplotly(p) -->
 
-if(rows > 20){
-  p <- rho |> 
-    tibble::rownames_to_column("basename") |>
-    mutate(plate = stringr::str_split(basename, "_", simplify = TRUE)[,1]) |>
-    ggplot(aes(x = rho)) +
-    geom_density(bw = 0.2) +
-    theme_minimal() +
-    theme(legend.position = "none") +
-    ggtitle("Overall distribution")
+<!-- if(rows > 20){ -->
+<!--   p <- rho |>  -->
+<!--     tibble::rownames_to_column("basename") |> -->
+<!--     mutate(plate = stringr::str_split(basename, "_", simplify = TRUE)[,1]) |> -->
+<!--     ggplot(aes(x = rho)) + -->
+<!--     geom_density(bw = 0.2) + -->
+<!--     theme_minimal() + -->
+<!--     theme(legend.position = "none") + -->
+<!--     ggtitle("Overall distribution") -->
 
-  ggplotly(p)
-}
+<!--   ggplotly(p) -->
+<!-- } -->
 
-if(exists("tmp") && "plate" %in% colnames(tmp)) {
-  p <- tmp |> 
-    ggplot(aes(x = rho,
-               colour = plate)) +
-    geom_density(bw = 0.2) +
-    theme_minimal() +
-    theme(legend.position = "none")
+<!-- if(exists("tmp") && "plate" %in% colnames(tmp)) { -->
+<!--   p <- tmp |>  -->
+<!--     ggplot(aes(x = rho, -->
+<!--                colour = plate)) + -->
+<!--     geom_density(bw = 0.2) + -->
+<!--     theme_minimal() + -->
+<!--     theme(legend.position = "none") -->
 
-  ggplotly(p)
-}
-```
+<!--   ggplotly(p) -->
+<!-- } -->
+<!-- ``` -->
 
-## Violin plot
+<!-- ## Violin plot -->
 
-```{r fig.align = "center"}
-rho |> 
-    tibble::rownames_to_column("basename") |>
-    mutate(plate = stringr::str_split(basename, "_", simplify = TRUE)[,1]) |>
-  ggplot(aes(x = plate,
-             y = rho,
-             colour = plate)) +
-  ggdist::stat_pointinterval(size = 0.3) +
-  # geom_boxplot(width = 0.5,
-  #              outlier.shape = NA) +
-  # geom_violin(aes(fill = plate)) +
-  # geom_boxplot(width = 0.1) +
-  theme(legend.position = "none",
-        axis.text.x = element_blank(),
-        axis.ticks.x = element_blank()) 
+<!-- ```{r fig.align = "center"} -->
+<!-- rho |>  -->
+<!--     tibble::rownames_to_column("basename") |> -->
+<!--     mutate(plate = stringr::str_split(basename, "_", simplify = TRUE)[,1]) |> -->
+<!--   ggplot(aes(x = plate, -->
+<!--              y = rho, -->
+<!--              colour = plate)) + -->
+<!--   ggdist::stat_pointinterval(size = 0.3) + -->
+<!--   # geom_boxplot(width = 0.5, -->
+<!--   #              outlier.shape = NA) + -->
+<!--   # geom_violin(aes(fill = plate)) + -->
+<!--   # geom_boxplot(width = 0.1) + -->
+<!--   theme(legend.position = "none", -->
+<!--         axis.text.x = element_blank(), -->
+<!--         axis.ticks.x = element_blank())  -->
 
-if(exists("tmp") && "plate" %in% colnames(tmp)) {
-  
-  tmp1 <- tmp |> 
-    dplyr::group_by(plate) |> 
-    dplyr::summarise(plate = unique(plate),
-                     y = max(rho))
-  
-  
-  tmp |> 
-    ggplot(aes(x = plate,
-               y = rho,
-               colour = plate,
-               label = plate)) +
-  ggdist::stat_pointinterval(size = 0.3) +
-  theme(legend.position = "none",
-        axis.text.x = element_blank(),
-        axis.ticks.x = element_blank())  +
-    ggrepel::geom_label_repel(data = tmp1,
-                              x = 1:length(unique(tmp1$plate)),
-                              y = tmp1$y,
-                              label = tmp1$plate,
-                              alpha = 0.7)
-                              
-  }
+<!-- if(exists("tmp") && "plate" %in% colnames(tmp)) { -->
+
+<!--   tmp1 <- tmp |>  -->
+<!--     dplyr::group_by(plate) |>  -->
+<!--     dplyr::summarise(plate = unique(plate), -->
+<!--                      y = max(rho)) -->
 
 
-```
+<!--   tmp |>  -->
+<!--     ggplot(aes(x = plate, -->
+<!--                y = rho, -->
+<!--                colour = plate, -->
+<!--                label = plate)) + -->
+<!--   ggdist::stat_pointinterval(size = 0.3) + -->
+<!--   theme(legend.position = "none", -->
+<!--         axis.text.x = element_blank(), -->
+<!--         axis.ticks.x = element_blank())  + -->
+<!--     ggrepel::geom_label_repel(data = tmp1, -->
+<!--                               x = 1:length(unique(tmp1$plate)), -->
+<!--                               y = tmp1$y, -->
+<!--                               label = tmp1$plate, -->
+<!--                               alpha = 0.7) -->
+
+<!--   } -->
+
+
+<!-- ``` -->
 
 ## Individual samples
 

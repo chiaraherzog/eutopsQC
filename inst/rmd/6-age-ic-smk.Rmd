@@ -23,7 +23,7 @@ if(any(grepl("_BC11", rownames(beta_merged)))){
   
   print("Mouse array - to be defined")
   
-} else {
+} else if(!exists("pheno")) {
   out <- epidish(beta.m = beta_merged,
                  ref.m = centEpiFibIC.m,
                  method = "RPC")$estF
@@ -39,6 +39,14 @@ if(any(grepl("_BC11", rownames(beta_merged)))){
     theme(legend.position = "none")
   
   ggplotly(plot)
+} else {
+  plot <- pheno |> 
+    ggplot(aes(x = basename,
+               y = ic)) +
+    geom_point() +
+    ylim(0,1)
+  
+  print(plot)
 }
 ```
 

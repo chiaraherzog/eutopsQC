@@ -590,19 +590,26 @@ preprocessData <- function(input = "",
                     output_file = paste0(report, "1-plate-summary.html", sep = ""))
   rmarkdown::render(input = paste0(system.file("rmd", "2-control-plots.Rmd", package = "eutopsQC")), 
                     output_file = paste0(report, "2-control-plots.html", sep = ""))
-  
   rmarkdown::render(input = paste0(system.file("rmd", "3-qc.Rmd", package = "eutopsQC")),
                     output_file = paste0(report, "3-qc.html", sep = ""))
   rmarkdown::render(input = paste0(system.file("rmd", "4-beta-distributions.Rmd", package = "eutopsQC")),
                     output_file = paste0(report, "4-beta-distributions.html", sep = ""))
   rmarkdown::render(input = paste0(system.file("rmd", "5-snr.Rmd", package = "eutopsQC")),
                     output_file = paste0(report, "5-snr.html", sep = ""))
+  
+  if(exists("pheno")){
+    out <- epidish(beta.m = beta_merged,
+                   ref.m = centEpiFibIC.m,
+                   method = "RPC")$estF
+    ind <- match(pheno$basename, rownames(out))
+    pheno$ic <- out[ind,3]
+  }
   rmarkdown::render(input = paste0(system.file("rmd", "6-age-ic-smk.Rmd", package = "eutopsQC")),
                     output_file = paste0(report, "6-age-ic-smk.html", sep = ""))
+  
   if(exists("pheno")){
     rmarkdown::render(input = paste0(system.file("rmd", "7-dimensred.Rmd", package = "eutopsQC")),
                       output_file = paste0(report, "7-dimensred.html", sep = ""))
-    save(pheno, file = paste0(log, "/pheno_qc.Rdata"))
   }
   
   
