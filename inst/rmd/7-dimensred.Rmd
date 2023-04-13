@@ -28,7 +28,7 @@ coerce_numeric <- function(beta_merged){
 
 # fix any potential difftime issues
 pheno <- pheno |> 
-  dplyr::mutate_if(is.difftime, ~ is.numeric)
+  dplyr::mutate_if(is.difftime, as.numeric)
 ```
 
 Two methods (linear and non-linear) are used for dimensionality reduction, which both have advantages and disadvantages:
