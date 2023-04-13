@@ -10,7 +10,14 @@ preprocessData(
   report = "",
   array = "EPIC",
   pheno = NULL,
-  path_to_bad_sample_list = ""
+  cores = 4,
+  by.dir = FALSE,
+  path_to_bad_sample_list = "",
+  overwrite = FALSE,
+  save.rs = FALSE,
+  create.shiny = F,
+  find.files = T,
+  run.name = NULL
 )
 }
 \arguments{
@@ -22,7 +29,19 @@ preprocessData(
 
 \item{array}{Methylation array type, EPIC by default}
 
-\item{pheno}{Phenotypic file. NULL by default. If pheno file is provided, it must have a column named basename with identical names to IDAT files. File can be provided as Rdata, RDS, .txt or .csv. Each column will be included in the batch effect correction. Ensure that no column exists with entirely identical variables.}
+\item{pheno}{phenotypic file. NULL by default. If pheno file is provided, it must have a column named basename with identical names to IDAT files. File can be provided as Rdata, RDS, .txt or .csv. Each column will be included in the batch effect correction. Ensure that no column exists with entirely identical variables}
+
+\item{cores}{cores to be used for ChAMP normalisation. 4 by default}
+
+\item{by.dir}{process by directory instead. FALSE by default. The result will not be different, but by.dir = T can be slower (for smaller projects), yet it is recommended for large projects.}
+
+\item{overwrite}{overwrite existing output folder. FALSE by default to prevent any accidental overwriting.}
+
+\item{save.rs}{save SNP (rs) probe values. FALSE by default.}
+
+\item{find.files}{only selects those files specified in basename from a given folder. REQUIRES a pheno file with basename column, run.name, and sets by.dir to F (not applicable)}
+
+\item{run.name}{NULL by default, required for find.files (not using plate/batch names)}
 }
 \value{
 preprocessed beta matrix and QC report

@@ -5,7 +5,7 @@
 \title{rhoEstimator}
 \usage{
 rhoEstimator(
-  path = NULL,
+  Mset = Mset,
   beta_e = 0.3309135,
   beta_s1 = 0.01957,
   beta_s2 = 0.97065,
@@ -13,7 +13,7 @@ rhoEstimator(
 )
 }
 \arguments{
-\item{path}{path to IDATs}
+\item{Mset}{MSet}
 
 \item{anno}{EPIC}
 }

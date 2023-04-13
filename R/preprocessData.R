@@ -4,7 +4,7 @@
 #' Authors: James E. Barrett, Chiara Herzog
 #' Contact: james.barrett@ucl.ac.uk, chiara.herzog@uibk.ac.at
 #' note to fix? "ChaMP_normalization/" empty folder is left in location of script where preprocessData function is called from
-#' 
+#'
 #' @param input Path to the input directory (raw IDAT folder)
 #' @param output Path to output directory (this is where beta file will be saved)
 #' @param report Path to report directory (this is where the report will be saved to)
@@ -14,6 +14,8 @@
 #' @param by.dir process by directory instead. FALSE by default. The result will not be different, but by.dir = T can be slower (for smaller projects), yet it is recommended for large projects.
 #' @param overwrite overwrite existing output folder. FALSE by default to prevent any accidental overwriting.
 #' @param save.rs save SNP (rs) probe values. FALSE by default.
+#' @param find.files only selects those files specified in basename from a given folder. REQUIRES a pheno file with basename column, run.name, and sets by.dir to F (not applicable)
+#' @param run.name NULL by default, required for find.files (not using plate/batch names)
 #' @return preprocessed beta matrix and QC report
 #' @export
 
@@ -30,17 +32,17 @@ preprocessData <- function(input = "",
                            create.shiny = F,
                            find.files = T,
                            run.name = NULL){
-  
+
   # Install packages
 
   if (!require("devtools")){
     install.packages("devtools")
   }
-  
+
   if (!require("ewastools")){
       devtools::install_github("hhhh5/ewastools")
   }
-  
+
   # create Output folder
   if(dir.exists(output)){
     NULL
@@ -51,7 +53,7 @@ preprocessData <- function(input = "",
   if("beta_merged.Rdata" %in% list.files(output) & overwrite == FALSE){
     stop("Output folder is not empty, continuing would overwrite existing results.")
   }
-  
+
   # create Report folder and subdirectories
   if(dir.exists(report)){
     NULL
@@ -59,36 +61,36 @@ preprocessData <- function(input = "",
     dir.create(report, recursive = TRUE)
     cat(paste0("Report folder ", report, " created.\n"))
   }
-  
+
   # append "/" for folder creation
   if(substr(report, nchar(report), nchar(report)) != "/"){
     report <- paste0(report, "/")
   }
-  
+
   log <- paste0(report, "Log")
   dir.create(log)
-  
+
   sink(paste0(report, "/Log/log.txt"), split = T)
-  
+
   # Warning messages
   if(!dir.exists(input)) stop('Raw file directory does not exist')
   if(!dir.exists(output)) stop('Output directory does not exist')
   if(!dir.exists(report)) stop('Report directory does not exist')
-  
+
   # checks for find.files
   if(find.files == T){
     by.dir <- F
-    
+
     if(!exists("pheno")){
     stop("Cannot find corresponding idat files if pheno file not provided.")
     }
-  
+
     if(is.null(run.name)){
       cat("Please provide run name:")
       run.name <- readline()
     }
   }
-  
+
   # Load in pheno file  if present. If pheno file present, check that basenames are in the files
   if(!is.null(pheno)){
     if(grepl(".csv", pheno)){
@@ -105,17 +107,17 @@ preprocessData <- function(input = "",
       stop("Pheno not in a compatible file (.csv, .txt, .xlsx, or .Rdata). Please amend the input file.")
     }
   }
-  
+
   # If not finding files, check whether files in folder overlap with pheno file - stop if not
   if(find.files == F && exists("pheno") && any(grepl(paste0(pheno$basename, collapse = "|"), list.files(input, pattern = ".idat", recursive = T, include.dirs = F)) == FALSE)){
       stop("Pheno names not entirely overlappying with basenames")
   }
-  
+
   # Begin pipeline
   cat('Beginning idat load and preprocessing pipeline...\n\n')
   cat('Current time:',as.character(Sys.time()),'\n')
   cat('cwd:',getwd(),'\n\n')
-  
+
   suppressPackageStartupMessages(library(minfi))
   suppressPackageStartupMessages(library(ChAMP))
   suppressPackageStartupMessages(library(impute))
@@ -123,10 +125,10 @@ preprocessData <- function(input = "",
   suppressPackageStartupMessages(library(ewastools))
   suppressPackageStartupMessages(library(stringr))
   suppressPackageStartupMessages(library(kableExtra))
-  suppressPackageStartupMessages(library(EpiDISH))   
-  suppressPackageStartupMessages(library(IlluminaHumanMethylationEPICanno.ilm10b4.hg19))   
-  suppressPackageStartupMessages(library(IlluminaHumanMethylation450kanno.ilmn12.hg19))   
-  
+  suppressPackageStartupMessages(library(EpiDISH))
+  suppressPackageStartupMessages(library(IlluminaHumanMethylationEPICanno.ilm10b4.hg19))
+  suppressPackageStartupMessages(library(IlluminaHumanMethylation450kanno.ilmn12.hg19))
+
   # Print arguments
   cat('Input arguments:\n')
   cat('Array type = ', array, '\n')
@@ -137,38 +139,38 @@ preprocessData <- function(input = "",
   cat('Pheno present =', ifelse(is.null(pheno), "FALSE", "TRUE"), "\n")
   cat('By directory = ', ifelse(by.dir == FALSE, "FALSE", "TRUE"), "\n\n")
   if(find.files == T){
-    cat('Note: You are using find.files function to select idat files from folders.\n')  
+    cat('Note: You are using find.files function to select idat files from folders.\n')
   }
-  
+
   # Define global thresholds
   INTENSITY_THRESHOLD <- 9.5     # minimum median intensity required
   DETECTION_P_THRESHOLD <- 0.01  # maximum detection p-value
   FAILED_PROBE_THRESHOLD <- 0.1   # maximum proportion of failed probes per sample
-  
+
   cat('INTENSITY_THRESHOLD =',INTENSITY_THRESHOLD,'\n')
   cat('DETECTION_P_THRESHOLD =',DETECTION_P_THRESHOLD,'\n')
   cat('FAILED_PROBE_THRESHOLD =',FAILED_PROBE_THRESHOLD,'\n\n')
-  
+
   # Initalise a list to log various parameters
-  
+
   if(find.files == F){
-    
+
   plates <- list.dirs(input,
                       full.names = FALSE, recursive = F)
-  
+
   if(by.dir == F){ # keep entire folder as one "set"
     tmp <- stringr::str_split(input, "/", simplify = TRUE)
     plates <- tmp[length(tmp)-1]
     rm(tmp)
   }
-  
+
   } else {
     plates <- run.name
   }
-  
+
   # by plate (or directory)
   for (i in 1:length(plates)){
-    
+
     log_data <- list(plate_name = plates[i], # name of plate
                      n_samples=NA,                # no of samples on plate
                      n_probes=NA,                 # no of probes in matrix
@@ -176,30 +178,30 @@ preprocessData <- function(input = "",
                      snp_outlier_metric=NA,       # from ewastools::snp_outliers
                      rm_sample_list=NA          # list of any removed samples
     )
-    
+
     #----------------------------------------------------#
     # Load and extract data
-    
+
     # Reading in sample sheet and targets
     cat('Begin load idats...')
     if(find.files == T){
       # read all files
       files <- list.files(input, full.names = T, recursive = T, pattern = ".idat")
-      
+
       # find those which are in pheno
       files <- files[grepl(paste0(pheno$basename, collapse = "|"), files)]
       checknames <- unique(gsub("_Red.idat|_Grn.idat", "", basename(files)))
       if(!all(pheno$basename %in% checknames)){
         stop("not all files were found")
       }
-      
+
       # reformat files for metharray read-in
       files <- unique(gsub("_Red.idat|_Grn.idat", "", files))
       # read in this list of files
       RGset <- minfi::read.metharray(basenames = files,
                                      verbose = T,
                                      force = T)
-      
+
     } else if (length(plates) == 1){
       RGset <- read.metharray.exp(base = input,
                                   verbose = T,
@@ -211,28 +213,28 @@ preprocessData <- function(input = "",
                                   force = TRUE,
                                   recursive = TRUE)
     }
-    
+
     # Add annotation for mouse array if required
     if(grepl("mouse", array, ignore.case = T)){
       suppressPackageStartupMessages(library(IlluminaMouseMethylationanno.12.v1.mm10))
       suppressPackageStartupMessages(library(IlluminaMouseMethylationmanifest))
       RGset@annotation <- c(array = "IlluminaMouseMethylation", annotation = "12.v1.mm10")
     }
-    
+
     # Save shinyMethyl page
     if(create.shiny == T){
       suppressPackageStartupMessages(library(shinyMethyl))
       invisible(summary <- shinySummarize(RGset))
-      
+
       save(summary, file = paste0(output, "/", plates[i], "_shinyMethyl.Rdata")) # This file can be opened later to run the shiny app
     }
-    
+
     # Save RS (only if not mouse, otherwise will throw error)
     if(save.rs == T & !grepl("mouse", array, ignore.case = T)){
       rs <- getSnpBeta(RGset)
       save(rs, file = paste0(log, "/", plates[i], "_rs.Rdata"))
     }
-    
+
     # Save the controls for later
     if (is(RGset, "rgDataSet")) {
       ctrls <- ENmix::getCGinfo(RGset, type = "ctrl")
@@ -244,13 +246,13 @@ preprocessData <- function(input = "",
     ctrl_g <- assays(RGset)$Green[ctrls$Address, ]
     # Extract detection p-values from RGset
     detP <- minfi::detectionP(RGset, type = "m+u")
-    
+
     # Extract quality control information
     cat('Begin QC (median intensity) extraction...')
     Mset <- preprocessRaw(RGset)
     qc <- getQC(Mset)
     cat(' done\n')
-    
+
     # Extract Rho
     cat('Calculating rho...\n')
     rho <- data.frame(matrix(NA, ncol=3))
@@ -258,17 +260,17 @@ preprocessData <- function(input = "",
     rho <- eutopsQC::rhoEstimator(Mset, anno = array)
     anno <- array
     cat('done\n')
-    
+
     # Extract SNP outlier metric using ewastools
     cat('Begin QC (SNP outlier metric) extraction...')
     beta_snp <- getSnpBeta(RGset)
     genotypes <- call_genotypes(beta_snp, learn = FALSE, maxiter = 50)
     log_data$snp_outlier_metric <- snp_outliers(genotypes)
     cat(' done\n')
-    
+
     # Filter any samples with median (un)methylated intensity less than threshold
     low_intensity_samples <- rownames(qc)[qc$mMed<INTENSITY_THRESHOLD | qc$uMed<INTENSITY_THRESHOLD]
-    
+
     # Load any bad samples (e.g. flagged by lab team or ICH)
     if(path_to_bad_sample_list!=''){
       bad_sample_list <- tryCatch({
@@ -287,18 +289,18 @@ preprocessData <- function(input = "",
     } else {
       bad_sample_list <- NULL
     }
-    
+
     # Filter samples with too many failed probes
     failed_samples <- colnames(detP)[colSums(detP>DETECTION_P_THRESHOLD) > (nrow(detP) * FAILED_PROBE_THRESHOLD)]
-    
+
     samples_to_remove <- unique(c(low_intensity_samples,
                                   bad_sample_list,
                                   failed_samples))
-    
+
     log_data$n_samples_removed <- length(samples_to_remove)
-    
+
     rm_ind <- match(samples_to_remove, colnames(RGset))
-    
+
     if(length(rm_ind)>0){
       RGset_filtered <- RGset[,-rm_ind]
       cat('\nRemoved',length(rm_ind),'failed sample(s):\n')
@@ -310,25 +312,25 @@ preprocessData <- function(input = "",
       RGset_filtered <- RGset
       cat('\nRemoved 0 failed samples... \n')
     }
-    cat('\n')     
-    
-    
+    cat('\n')
+
+
     # Bias correction
     # Background intensity correction and dye bias correction
     cat('Begin ssNOOB preprocessing...')
     ssNOOB_filtered <- preprocessNoob(RGset_filtered, dyeCorr=TRUE, verbose=TRUE, dyeMethod='single')
     cat('done\n')
-    
+
     # Extract corresponding beta values
     cat('Begin beta extraction...')
     beta_ssNOOB_filtered <- getBeta(ssNOOB_filtered)
     cat('done\n')
     log_data$n_samples <- ncol(beta_ssNOOB_filtered)
     log_data$n_probes <- nrow(beta_ssNOOB_filtered)
-    
+
     # check that no bad samples are present:
     beta_ssNOOB_filtered <- beta_ssNOOB_filtered[,!colnames(beta_ssNOOB_filtered) %in% samples_to_remove]
-    
+
     # Probe bias correction using BMIQ
     if(grepl("mouse", array, ignore.case = T)){
       cat('Begin BMIQ normalisation using', array, 'version...\n')
@@ -339,7 +341,7 @@ preprocessData <- function(input = "",
       beta_ssNOOB_filtered_norm <- invisible(champ.norm(beta=beta_ssNOOB_filtered,arraytype=array,cores=cores))
       cat('done\n')
     }
-    
+
     # Save beta density as plotly plot
     cat('Begin plot beta densities...')
     d <- density(beta_ssNOOB_filtered_norm[,1], na.rm=TRUE, bw=0.02,
@@ -348,7 +350,7 @@ preprocessData <- function(input = "",
                  mode = 'line',
                  type='scatter',
                  text=colnames(beta_ssNOOB_filtered_norm)[1])
-    
+
     for(j in 2:ncol(beta_ssNOOB_filtered_norm)){
       d <- density(beta_ssNOOB_filtered_norm[,j], na.rm=TRUE, bw=0.02,
                    from = -0.05, to = 1.05)
@@ -357,98 +359,98 @@ preprocessData <- function(input = "",
                            type='scatter',
                            text=colnames(beta_ssNOOB_filtered_norm)[j])
     }
-    
+
     p <- p %>%   layout(title = plates[i],
                         yaxis = list(title = 'Density'),
                         xaxis = list(title = 'Beta'),
                         showlegend=FALSE)%>%
       config(displayModeBar = FALSE)
     cat(' done\n')
-    
+
     # Save outputs
     cat('Begin save outputs...')
     save(qc, file=paste(log,'/',
                         plates[i],'_qc.Rdata',sep=''))
-    
+
     save(ctrl_g, ctrl_r, ctrls, file=paste(log,'/',
                                            plates[i],'_ctrl.Rdata',sep=''))
-    
+
     if(length(plates) != 1){
       save(beta_ssNOOB_filtered_norm, file=paste(output,'/',
                                                  plates[i],'_beta_ssNOOB_filtered_norm.Rdata',sep=''))
-    } 
-    
+    }
+
     save(detP, file=paste(log,'/',
                           plates[i],'_detP.Rdata',sep=''))
-    
+
     save(p, file=paste(log,'/',
                        plates[i],'_beta_density_plot.Rdata',sep=''))
-    
+
     save(rho, file=paste(log,'/',
                          plates[i],'_rho.Rdata',sep=''))
-    
+
     save(log_data, file=paste(log,'/',
                               plates[i],'_log_data.Rdata',sep=''))
-    
+
     cat(' done\n\n')
   }
-  
-  rm(RGset, p, detP, log_data, qc, ssNOOB_filtered, beta_ssNOOB_filtered, 
+
+  rm(RGset, p, detP, log_data, qc, ssNOOB_filtered, beta_ssNOOB_filtered,
      beta_snp, d, genotypes, Mset, probeInfoALL.lv, RGset_filtered, DETECTION_P_THRESHOLD,
      FAILED_PROBE_THRESHOLD, failed_samples, INTENSITY_THRESHOLD, i, j, rm_ind, samples_to_remove);invisible(gc())
-  
+
   cat('Beginning plate combination pipeline...\n\n')
   DETECTION_P_THRESHOLD <- 0.01   # maximum detection p-value
   FAILED_SAMPLE_THRESHOLD <- 0.1   # maximum proportion of failed samples per probe
   cat('DETECTION_P_THRESHOLD =',DETECTION_P_THRESHOLD,'\n')
   cat('FAILED_SAMPLE_THRESHOLD =',FAILED_SAMPLE_THRESHOLD,'\n\n')
-  
+
   for(p in plates){
     if(!file.exists(paste(log,'/',p,'_detP.Rdata',sep=''))){
       stop(paste('detP matrix for plate ',p,' is missing',sep=''))
     }
   }
-  
+
   load(paste(log,'/',plates[1],'_detP.Rdata',sep=''))
   detP_merged <- detP
-  
+
   cat(paste('Merged plate ',plates[1],'\n',sep=''))
-  
+
   if(length(plates)>1){
     for(p in plates[2:length(plates)]){
       load(paste(log,'/',p,'_detP.Rdata',sep=''))
-      
+
       detP_merged <- merge(detP_merged, detP,
                            by.x='row.names', by.y='row.names', sort=FALSE)
-      
+
       # reassign the row names
       row.names(detP_merged) <- detP_merged$Row.names
-      
+
       # remove this column created by the merge function
       detP_merged$Row.names <- NULL
-      
+
       cat(paste('Merged plate ',p,'\n',sep=''))
     }
     cat('\n')
   }
-  
+
   # Remove any failed probes
   failed_probes <- rownames(detP_merged)[rowSums(detP_merged>DETECTION_P_THRESHOLD)>(ncol(detP_merged)*FAILED_SAMPLE_THRESHOLD)]
-  
+
   # Combine and save output
   DETECTION_P_THRESHOLD <- 0.01   # maximum detection p-value
   cat('DETECTION_P_THRESHOLD =',DETECTION_P_THRESHOLD,'\n\n')
-  
+
   # combine all CpGs to remove
   rm_names <- unique(c(chrY_names,non_CpG_names,snp_names,zhou_list,failed_probes))
-  cat('Removing', length(chrY_names),'chrY probes\n') 
-  cat('Removing', length(non_CpG_names),'non-CpG probes\n') 
-  cat('Removing', length(snp_names),'SNP probes\n') 
-  cat('Removing', length(failed_probes),'failed probes (detP)\n') 
-  cat('Removing', length(zhou_list),'Zhou SNP probes\n\n') 
-  
+  cat('Removing', length(chrY_names),'chrY probes\n')
+  cat('Removing', length(non_CpG_names),'non-CpG probes\n')
+  cat('Removing', length(snp_names),'SNP probes\n')
+  cat('Removing', length(failed_probes),'failed probes (detP)\n')
+  cat('Removing', length(zhou_list),'Zhou SNP probes\n\n')
+
   input_dir_list <- output
-  
+
   #check beta matrices and detP matrices are present for each plate
   if(length(plates)>1){
     for(p in plates){
@@ -460,34 +462,34 @@ preprocessData <- function(input = "",
       }
     }
   }
-  
+
   # Load and combine the beta and detP matrices
   na_count <- 0
   beta_merged <- NULL
-  
+
   for(p in plates){
-    
+
     if(length(plates) != 1){ # load in extra file; if plates == 1, beta is still in environment
       load(paste(output,'/',p,'_beta_ssNOOB_filtered_norm.Rdata',sep=''))
     }
-    
+
     load(paste(log,'/',p,'_detP.Rdata',sep=''))
-    
-    # remove probes and any bad samples   
+
+    # remove probes and any bad samples
     ind.row <- match(rownames(beta_ssNOOB_filtered_norm),rm_names)
     beta_plate_filtered <- beta_ssNOOB_filtered_norm[is.na(ind.row),]
     rm(beta_ssNOOB_filtered_norm);invisible(gc())
-    
+
     # match detection p-values to beta matrix
     ind.row <- match(rownames(beta_plate_filtered),rownames(detP))
     ind.col <- match(colnames(beta_plate_filtered),colnames(detP))
     detP_plate <- detP[ind.row, ind.col]
-    
+
     # replace failed data points with NA
     beta_plate_filtered[detP_plate > DETECTION_P_THRESHOLD] <- NA
     na_count <- na_count + sum(is.na(beta_plate_filtered))
     rm(detP);rm(detP_plate);invisible(gc())
-    
+
     # Imputation
     r <- rowSums(is.na(beta_plate_filtered))
     if(sum(r > 0.8*ncol(beta_plate_filtered))>0){
@@ -496,65 +498,65 @@ preprocessData <- function(input = "",
           sum(r > 0.8*ncol(beta_plate_filtered)),
           'probes on plate',p,'(removed from beta matrix)\n')
     }
-    
+
     out <- capture.output(beta_plate_filtered_imputed <- impute.knn(beta_plate_filtered,k=10,rowmax=0.8)$data)
     rm(beta_plate_filtered);invisible(gc())
-    
-    
+
+
     if(is.null(beta_merged)){
       beta_merged <- beta_plate_filtered_imputed
       rm(beta_plate_filtered_imputed);invisible(gc())
-      
+
     } else {
       beta_merged <- merge(beta_merged, beta_plate_filtered_imputed,
                            by.x='row.names', by.y='row.names', sort=FALSE)
       rm(beta_plate_filtered_imputed);invisible(gc())
-      
+
       # reasign the row names
       row.names(beta_merged) <- beta_merged$Row.names
-      
+
       # remove this column created by the merge function
       beta_merged$Row.names <- NULL
     }
-    
+
     cat(paste('Merged plate ',p,'\n',sep=''))
   }
   cat('\n')
-  
-  
+
+
   cat(paste(na_count,
             ' (',
             round(na_count/(ncol(beta_merged) * nrow(beta_merged)),digits=4),
             '%) ',
             'data points failed detection p-value test\n',sep=''))
-  
-  
+
+
   cat('\nMerged beta matrix has',
       nrow(beta_merged),
       'CpGs and',
       ncol(beta_merged),
       'samples\n\n')
-  
+
   # Save output
   cat('Begin save outputs...')
   save(beta_merged, file=paste(output,'/beta_merged.Rdata',sep=''))
   cat(' done\n\n')
-  
+
   # Remove intermediate files
   cat('Delete intermediate files... ')
   files <- list.files(output, full.names = TRUE)
   ind <- grepl("filtered_norm", files)
   file.remove(files[ind])
   cat(' done\n\n')
-  
-  
+
+
   # Load rho
   if(length(plates) == 1){
     load(paste(log,'/',plates,'_rho.Rdata',sep=''))
   } else {
     for(c in 1:length(plates)){
       load(paste(log,'/',plates[c],'_rho.Rdata',sep=''))
-      
+
       if(c == 1){
         rho_tmp <- rho
       } else {
@@ -563,7 +565,7 @@ preprocessData <- function(input = "",
     }
     rho <- rho_tmp
   }
-  
+
   if(!exists("pheno")){
     pheno <- data.frame(matrix(nrow = ncol(beta_merged),
                                ncol = 3))
@@ -572,17 +574,17 @@ preprocessData <- function(input = "",
     pheno$sentrix_id <- stringr::str_split(pheno$basename, "_", simplify = T)[,1]
     pheno$sentrix_pos <- stringr::str_split(pheno$basename, "_", simplify = T)[,2]
   }
-  
+
   pheno$rho <- numeric(length = nrow(pheno))
   pheno$rho <- rho$rho[match(pheno$basename, rownames(rho))]
-  
+
   # Load controls
   if(length(plates) == 1){
     load(paste(log,'/',plates,'_ctrl.Rdata',sep=''))
   } else {
     for(c in 1:length(plates)){
       load(paste(log,'/',plates[c],'_ctrl.Rdata',sep=''))
-      
+
       if(c ==1){
         ctrl_tmp_g <- ctrl_g
         ctrl_tmp_r <- ctrl_r
@@ -591,48 +593,48 @@ preprocessData <- function(input = "",
         ctrl_tmp_r <- cbind(ctrl_tmp_r, ctrl_r)
       }
     }
-    
+
     ctrl_g <- ctrl_tmp_g
     ctrl_r <- ctrl_tmp_r
   }
-  
-  
+
+
   # Load log
   if(length(plates) == 1){
     load(paste(log,'/',plates,'_log_data.Rdata',sep=''))
   } else {
     for(p in 1:length(plates)){
       load(paste(log,'/',plates[p],'_log_data.Rdata',sep=''))
-      
+
       if(p == 1){
         log_data_tmp <- log_data
       } else {
-        
+
         for(x in 1:length(log_data_tmp)){
           log_data_tmp[[x]] <- c(log_data_tmp[[x]], log_data[[x]])
         }
       }
-      
+
       log_data <- log_data_tmp
     }
   }
-  
+
   if(length(plates) != 1){
   save(log_data, file = paste0(log, "/merged_log_data.Rdata"))
   save(rho, file = paste0(log, "/merged_rho.Rdata"))
   }
-  
+
   # Create a report
   cat('Creating RMarkdown Report...\n')
   file.copy(from = paste0(system.file("rmd", "_site.yml", package = "eutopsQC")),
             to = report)
   rmarkdown::render(input = paste0(system.file("rmd", "index.Rmd",
-                                               package = "eutopsQC")), 
+                                               package = "eutopsQC")),
                     output_file = paste0(report, "index.html", sep = ""))
   rmarkdown::render(input = paste0(system.file("rmd", "1-plate-summary.Rmd",
-                                               package = "eutopsQC")), 
+                                               package = "eutopsQC")),
                     output_file = paste0(report, "1-plate-summary.html", sep = ""))
-  rmarkdown::render(input = paste0(system.file("rmd", "2-control-plots.Rmd", package = "eutopsQC")), 
+  rmarkdown::render(input = paste0(system.file("rmd", "2-control-plots.Rmd", package = "eutopsQC")),
                     output_file = paste0(report, "2-control-plots.html", sep = ""))
   rmarkdown::render(input = paste0(system.file("rmd", "3-qc.Rmd", package = "eutopsQC")),
                     output_file = paste0(report, "3-qc.html", sep = ""))
@@ -640,7 +642,7 @@ preprocessData <- function(input = "",
                     output_file = paste0(report, "4-beta-distributions.html", sep = ""))
   rmarkdown::render(input = paste0(system.file("rmd", "5-snr.Rmd", package = "eutopsQC")),
                     output_file = paste0(report, "5-snr.html", sep = ""))
-  
+
   if(exists("pheno") & array != "mouse"){
     out <- epidish(beta.m = beta_merged,
                    ref.m = centEpiFibIC.m,
@@ -648,18 +650,18 @@ preprocessData <- function(input = "",
     ind <- match(pheno$basename, rownames(out))
     pheno$ic <- out[ind,3]
   }
-  
-  
+
+
   rmarkdown::render(input = paste0(system.file("rmd", "6-age-ic-smk.Rmd", package = "eutopsQC")),
                     output_file = paste0(report, "6-age-ic-smk.html", sep = ""))
-  
+
   if(exists("pheno")){
     rmarkdown::render(input = paste0(system.file("rmd", "7-dimensred.Rmd", package = "eutopsQC")),
                       output_file = paste0(report, "7-dimensred.html", sep = ""))
   }
-  
-  
-  
+
+
+
   # Save snp
   if(!grepl("mouse", array, ignore.case = T) && save.rs==T){
     if(length(plates) == 1){
@@ -667,28 +669,28 @@ preprocessData <- function(input = "",
     } else {
       for(p in 1:length(plates)){
         load(paste(log,'/',plates[p],'_rs.Rdata',sep=''))
-        
+
         if(p == 1){
           rs_tmp <- rs
         } else {
           rs_tmp <- cbind(rs_tmp, rs)
         }
-        
+
         rs <- rs_tmp
       }
     }
   }
-  
+
   # Save merged files
   if(length(plates) != 1){
     if(!grepl("mouse", array, ignore.case = T) && save.rs == T){
       save(rs, file = paste0(log, "/merged_rs.Rdata"))
     }
   }
-  
-  
+
+
   cat('Session info:\n\n')
   print(sessionInfo())
   sink()
-  
+
 }
