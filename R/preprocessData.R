@@ -27,7 +27,9 @@ preprocessData <- function(input = "",
                            path_to_bad_sample_list = "",
                            overwrite = FALSE,
                            save.rs = FALSE,
-                           create.shiny = F){
+                           create.shiny = F,
+                           find.files = T,
+                           run.name = NULL){
   
   # Install packages
 
@@ -73,7 +75,19 @@ preprocessData <- function(input = "",
   if(!dir.exists(output)) stop('Output directory does not exist')
   if(!dir.exists(report)) stop('Report directory does not exist')
   
+  # checks for find.files
+  if(find.files == T){
+    by.dir <- F
+    
+    if(!exists("pheno")){
+    stop("Cannot find corresponding idat files if pheno file not provided.")
+    }
   
+    if(is.null(run.name)){
+      cat("Please provide run name:")
+      run.name <- readline()
+    }
+  }
   
   # Load in pheno file  if present. If pheno file present, check that basenames are in the files
   if(!is.null(pheno)){
@@ -92,8 +106,9 @@ preprocessData <- function(input = "",
     }
   }
   
-  if(exists("pheno") && any(grepl(paste0(pheno$basename, collapse = "|"), list.files(input, pattern = ".idat", recursive = T, include.dirs = F)) == FALSE)){
-    stop("Pheno names not entirely overlappying with basenames")
+  # If not finding files, check whether files in folder overlap with pheno file - stop if not
+  if(find.files == F && exists("pheno") && any(grepl(paste0(pheno$basename, collapse = "|"), list.files(input, pattern = ".idat", recursive = T, include.dirs = F)) == FALSE)){
+      stop("Pheno names not entirely overlappying with basenames")
   }
   
   # Begin pipeline
@@ -121,6 +136,9 @@ preprocessData <- function(input = "",
   cat('Path to log file =',log,'\n')
   cat('Pheno present =', ifelse(is.null(pheno), "FALSE", "TRUE"), "\n")
   cat('By directory = ', ifelse(by.dir == FALSE, "FALSE", "TRUE"), "\n\n")
+  if(find.files == T){
+    cat('Note: You are using find.files function to select idat files from folders.\n')  
+  }
   
   # Define global thresholds
   INTENSITY_THRESHOLD <- 9.5     # minimum median intensity required
@@ -132,6 +150,9 @@ preprocessData <- function(input = "",
   cat('FAILED_PROBE_THRESHOLD =',FAILED_PROBE_THRESHOLD,'\n\n')
   
   # Initalise a list to log various parameters
+  
+  if(find.files == F){
+    
   plates <- list.dirs(input,
                       full.names = FALSE, recursive = F)
   
@@ -139,6 +160,10 @@ preprocessData <- function(input = "",
     tmp <- stringr::str_split(input, "/", simplify = TRUE)
     plates <- tmp[length(tmp)-1]
     rm(tmp)
+  }
+  
+  } else {
+    plates <- run.name
   }
   
   # by plate (or directory)
@@ -157,7 +182,25 @@ preprocessData <- function(input = "",
     
     # Reading in sample sheet and targets
     cat('Begin load idats...')
-    if (length(plates) == 1){
+    if(find.files == T){
+      # read all files
+      files <- list.files(input, full.names = T, recursive = T, pattern = ".idat")
+      
+      # find those which are in pheno
+      files <- files[grepl(paste0(pheno$basename, collapse = "|"), files)]
+      checknames <- unique(gsub("_Red.idat|_Grn.idat", "", basename(files)))
+      if(!all(pheno$basename %in% checknames)){
+        stop("not all files were found")
+      }
+      
+      # reformat files for metharray read-in
+      files <- unique(gsub("_Red.idat|_Grn.idat", "", files))
+      # read in this list of files
+      RGset <- minfi::read.metharray(basenames = files,
+                                     verbose = T,
+                                     force = T)
+      
+    } else if (length(plates) == 1){
       RGset <- read.metharray.exp(base = input,
                                   verbose = T,
                                   force = TRUE,
@@ -255,6 +298,7 @@ preprocessData <- function(input = "",
     log_data$n_samples_removed <- length(samples_to_remove)
     
     rm_ind <- match(samples_to_remove, colnames(RGset))
+    
     if(length(rm_ind)>0){
       RGset_filtered <- RGset[,-rm_ind]
       cat('\nRemoved',length(rm_ind),'failed sample(s):\n')
@@ -597,13 +641,15 @@ preprocessData <- function(input = "",
   rmarkdown::render(input = paste0(system.file("rmd", "5-snr.Rmd", package = "eutopsQC")),
                     output_file = paste0(report, "5-snr.html", sep = ""))
   
-  if(exists("pheno")){
+  if(exists("pheno") & array != "mouse"){
     out <- epidish(beta.m = beta_merged,
                    ref.m = centEpiFibIC.m,
                    method = "RPC")$estF
     ind <- match(pheno$basename, rownames(out))
     pheno$ic <- out[ind,3]
   }
+  
+  
   rmarkdown::render(input = paste0(system.file("rmd", "6-age-ic-smk.Rmd", package = "eutopsQC")),
                     output_file = paste0(report, "6-age-ic-smk.html", sep = ""))
   
