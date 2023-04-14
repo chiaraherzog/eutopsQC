@@ -11,7 +11,7 @@
 #' SNP Names
 #'
 #' List of probes identified as potential SNPs.
-#' 
+#'
 #' @docType data
 #'
 #' @usage data(snp_names)
@@ -20,17 +20,26 @@
 #' non_CpG_names
 #'
 #' List of probes identified as non-CpGs on the EPIC array
-#' 
+#'
 #' @docType data
 #'
 #' @usage data(non_CpG_names)
 "non_CpG_names"
 
 #' chrY names
-#' 
+#'
 #' CpGs on chrY
-#' 
+#'
 #' @docType data
 #'
 #' @usage data(chrY_names)
 "chrY_names"
+
+#' packageList
+#'
+#' required BiocDependencies
+#'
+#' @docType data
+#'
+#' @usage used in installBiocDependencies
+"packageList"

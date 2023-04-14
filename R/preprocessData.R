@@ -30,18 +30,11 @@ preprocessData <- function(input = "",
                            overwrite = FALSE,
                            save.rs = FALSE,
                            create.shiny = F,
-                           find.files = T,
+                           find.files = F,
                            run.name = NULL){
 
-  # Install packages
-
-  if (!require("devtools")){
-    install.packages("devtools")
-  }
-
-  if (!require("ewastools")){
-      devtools::install_github("hhhh5/ewastools")
-  }
+  # Install packages (if missing)
+  eutopsQC::installBiocDependencies(eutopsQC::packageList)
 
   # create Output folder
   if(dir.exists(output)){
