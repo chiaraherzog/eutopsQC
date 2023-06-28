@@ -16,7 +16,7 @@ preprocessData(
   overwrite = FALSE,
   save.rs = FALSE,
   create.shiny = F,
-  find.files = T,
+  find.files = F,
   run.name = NULL
 )
 }
