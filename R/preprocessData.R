@@ -31,7 +31,8 @@ preprocessData <- function(input = "",
                            save.rs = FALSE,
                            create.shiny = F,
                            find.files = F,
-                           run.name = NULL){
+                           run.name = NULL,
+                           beta.subset.compatible = F){
 
   # Install packages (if missing)
   eutopsQC::installBiocDependencies(eutopsQC::packageList)
@@ -577,41 +578,21 @@ preprocessData <- function(input = "",
       'CpGs and',
       ncol(beta_merged),
       'samples\n\n')
+  
+  # create a EPIC v1 v2 compatible subset of beta_merged
+  if(beta.subset.compatible == TRUE){
+    beta_merged_compatible <- subset_versionshared_CpGs(beta_merged, array)
+  }
 
   # Save output
   cat('Begin save outputs...')
   
-  # Disabled. Rather output true epicv2 IDs.
-  # some EPICv1 probes have been renamed in the core ID
-  # some replicate probes target different strand or are Infinium I or II type
-  # if(grepl("v2", array, ignore.case = T)){
-  #   # Compute mean across duplicate probes
-  #   cat("Computing mean across duplicate probes (EPIC v2)...")
-  # 
-  #   # Find dupes
-  #   c <- data.frame(cpgs = rownames(beta_merged))
-  #   c$cpgs_simple <- stringr::str_split(c$cpgs, "_", simplify = T)[,1]
-  #   dupes <- c |> janitor::get_dupes(cpgs_simple)
-  # 
-  #   # non dupes - remove extra bit
-  #   beta_merged_nondupe <- beta_merged[!rownames(beta_merged) %in% dupes$cpgs,]
-  #   rownames(beta_merged_nondupe) <- stringr::str_split(rownames(beta_merged_nondupe), "_", simplify = T)[,1]
-  # 
-  #   beta_merged_dupe <- beta_merged[rownames(beta_merged) %in% dupes$cpgs,] |>
-  #     as.data.frame() |>
-  #     tibble::rownames_to_column("cpg") |>
-  #     dplyr::mutate(cpg = stringr::str_split(cpg, "_", simplify = T)[,1]) |>
-  #     group_by(cpg) |>
-  #     dplyr::reframe(across(everything(), ~ mean(.x))) |>
-  #     ungroup() |> distinct() |>
-  #     tibble::column_to_rownames("cpg") |>
-  #     as.matrix()
-  # 
-  #   # identical(colnames(beta_merged_dupe), colnames(beta_merged_nondupe))
-  #   beta_merged <- rbind(beta_merged_dupe, beta_merged_nondupe)
-  # }
-
   save(beta_merged, file=paste(output,'/beta_merged.Rdata',sep=''))
+  
+  if(beta.subset.compatible == TRUE){
+    save(beta_merged_compatible, file=paste(output,'/beta_merged_compatible.Rdata',sep=''))
+  }
+  
   cat(' done\n\n')
 
   # Remove intermediate files
