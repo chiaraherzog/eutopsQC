@@ -43,6 +43,7 @@ preprocessData <- function(input = "",
     dir.create(output, recursive = TRUE)
     cat(paste0("Output folder ", output, " created.\n"))
   }
+
   if("beta_merged.Rdata" %in% list.files(output) & overwrite == FALSE){
     stop("Output folder is not empty, continuing would overwrite existing results.")
   }
@@ -145,7 +146,6 @@ preprocessData <- function(input = "",
   cat('FAILED_PROBE_THRESHOLD =',FAILED_PROBE_THRESHOLD,'\n\n')
 
   # Initalise a list to log various parameters
-
   if(find.files == F){
 
   plates <- list.dirs(input,
@@ -209,10 +209,42 @@ preprocessData <- function(input = "",
 
     # Add annotation for mouse array if required
     if(grepl("mouse", array, ignore.case = T)){
+
+      # Download annotation for mouse array if not available
+      if(!require(IlluminaMouseMethylationanno.12.v1.mm10)){
+        devtools::install_github("chiaraherzog/IlluminaMouseMethylationanno.12.v1.mm10")
+      }
+      # Download manifest for mouse array if not available
+      if(!require(IlluminaMouseMethylationmanifest)){
+        devtools::install_github("chiaraherzog/IlluminaMouseMethylationmanifest")
+      }
+
+      # Load up packages
       suppressPackageStartupMessages(library(IlluminaMouseMethylationanno.12.v1.mm10))
       suppressPackageStartupMessages(library(IlluminaMouseMethylationmanifest))
+
+      # Append to RGset
       RGset@annotation <- c(array = "IlluminaMouseMethylation", annotation = "12.v1.mm10")
     }
+
+    # Add annotation for EPICv2 array if required
+    if(grepl("v2", array, ignore.case = T)){
+
+      # Download manifest if not available
+      if(!require(IlluminaHumanMethylationEPICv2manifest)){
+        devtools::install_github("jokergoo/IlluminaHumanMethylationEPICv2manifest")
+      }
+
+      # Download annotation if not available
+      if(!require(IlluminaHumanMethylationEPICv2anno.20a1.hg38)){
+        devtools::install_github("jokergoo/IlluminaHumanMethylationEPICv2anno.20a1.hg38")
+      }
+
+      suppressPackageStartupMessages(library(IlluminaHumanMethylationEPICv2manifest))
+      suppressPackageStartupMessages(library(IlluminaHumanMethylationEPICv2anno.20a1.hg38))
+      RGset@annotation <- c(array = "IlluminaHumanMethylationEPICv2", annotation = "20a1.hg38")
+    }
+
 
     # Save shinyMethyl page
     if(create.shiny == T){
@@ -234,9 +266,11 @@ preprocessData <- function(input = "",
     } else if (is(RGset, "RGChannelSet")) {
       ctrls <- minfi::getProbeInfo(RGset, type = "Control")
     }
+
     ctrls <- ctrls[ctrls$Address %in% rownames(RGset) & !is.na(ctrls$Color), ]
     ctrl_r <- assays(RGset)$Red[ctrls$Address, ]
     ctrl_g <- assays(RGset)$Green[ctrls$Address, ]
+
     # Extract detection p-values from RGset
     detP <- minfi::detectionP(RGset, type = "m+u")
 
@@ -250,7 +284,7 @@ preprocessData <- function(input = "",
     cat('Calculating rho...\n')
     rho <- data.frame(matrix(NA, ncol=3))
     colnames(rho) <- c("mode0", "mode1", "rho")
-    rho <- eutopsQC::rhoEstimator(Mset, anno = array)
+    rho <- rhoEstimator(Mset, anno = array)
     anno <- array
     cat('done\n')
 
@@ -329,7 +363,11 @@ preprocessData <- function(input = "",
       cat('Begin BMIQ normalisation using', array, 'version...\n')
       beta_ssNOOB_filtered_norm <- invisible(IlluminaMouseMethylationmanifest::champ.normm(beta=beta_ssNOOB_filtered,arraytype=array,cores=cores))
       cat('done\n')
-    } else {
+    } else if (grepl("v2", array, ignore.case = T)){
+      cat('Begin BMIQ normalisation using', array, 'version...\n')
+      beta_ssNOOB_filtered_norm <- invisible(eutopsQC:::champ.normv2(beta=beta_ssNOOB_filtered,arraytype=array,cores=cores))
+      cat('done\n')
+      } else {
       cat('Begin BMIQ normalisation using', array, 'version...\n')
       beta_ssNOOB_filtered_norm <- invisible(champ.norm(beta=beta_ssNOOB_filtered,arraytype=array,cores=cores))
       cat('done\n')
@@ -469,7 +507,11 @@ preprocessData <- function(input = "",
     load(paste(log,'/',p,'_detP.Rdata',sep=''))
 
     # remove probes and any bad samples
-    ind.row <- match(rownames(beta_ssNOOB_filtered_norm),rm_names)
+    if(grepl("v2", array, ignore.case = T)){
+      ind.row <- match(stringr::str_split(rownames(beta_ssNOOB_filtered_norm), "_", simplify = T)[,1],rm_names)
+    } else {
+      ind.row <- match(rownames(beta_ssNOOB_filtered_norm),rm_names)
+      }
     beta_plate_filtered <- beta_ssNOOB_filtered_norm[is.na(ind.row),]
     rm(beta_ssNOOB_filtered_norm);invisible(gc())
 
@@ -532,6 +574,34 @@ preprocessData <- function(input = "",
 
   # Save output
   cat('Begin save outputs...')
+
+  if(grepl("v2", array, ignore.case = T)){
+    # Compute mean across duplicate probes
+    cat("Computing mean across duplicate probes (EPIC v2)...")
+
+    # Find dupes
+    c <- data.frame(cpgs = rownames(beta_merged))
+    c$cpgs_simple <- stringr::str_split(c$cpgs, "_", simplify = T)[,1]
+    dupes <- c |> janitor::get_dupes(cpgs_simple)
+
+    # non dupes - remove extra bit
+    beta_merged_nondupe <- beta_merged[!rownames(beta_merged) %in% dupes$cpgs,]
+    rownames(beta_merged_nondupe) <- stringr::str_split(rownames(beta_merged_nondupe), "_", simplify = T)[,1]
+
+    beta_merged_dupe <- beta_merged[rownames(beta_merged) %in% dupes$cpgs,] |>
+      as.data.frame() |>
+      tibble::rownames_to_column("cpg") |>
+      dplyr::mutate(cpg = stringr::str_split(cpg, "_", simplify = T)[,1]) |>
+      group_by(cpg) |>
+      dplyr::reframe(across(everything(), ~ mean(.x))) |>
+      ungroup() |> distinct() |>
+      tibble::column_to_rownames("cpg") |>
+      as.matrix()
+
+    # identical(colnames(beta_merged_dupe), colnames(beta_merged_nondupe))
+    beta_merged <- rbind(beta_merged_dupe, beta_merged_nondupe)
+  }
+
   save(beta_merged, file=paste(output,'/beta_merged.Rdata',sep=''))
   cat(' done\n\n')
 
@@ -559,7 +629,7 @@ preprocessData <- function(input = "",
     rho <- rho_tmp
   }
 
-  if(!exists("pheno")){
+  if(!exists("pheno") | is.null(pheno)){
     pheno <- data.frame(matrix(nrow = ncol(beta_merged),
                                ncol = 3))
     colnames(pheno) <- c("basename", "sentrix_id", "sentrix_pos")
