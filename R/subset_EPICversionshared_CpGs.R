@@ -39,12 +39,12 @@ subset_versionshared_CpGs <- function(beta, array){
       beta_subset_dupe = beta_subset |> 
         dplyr::filter(EPICv1_Loci %in% dupes) |>
         dplyr::group_by(EPICv1_Loci) |>
-        dplyr::reframe(across(everything(), ~ mean(.x))) |>
+        dplyr::reframe(dplyr::across(tidyselect::everything(), ~ mean(.x))) |>
         dplyr::ungroup() |> 
         dplyr::distinct() 
       
       # final matrix, with EPICv1 IDs as rowname
-      beta_subset = bind_rows(beta_subset_dupe, beta_subset_nondupe) |>
+      beta_subset = dplyr::bind_rows(beta_subset_dupe, beta_subset_nondupe) |>
         tibble::column_to_rownames("EPICv1_Loci") |>
         as.matrix()
       
