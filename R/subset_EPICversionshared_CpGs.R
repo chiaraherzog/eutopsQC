@@ -7,9 +7,6 @@
 #' @param character "EPIC or "EPICv2"
 #' @return beta matrix subset
 #' @export
-#'
-#' @examples
-#' subset_versionshared_CpGs(beta_merged, "EPICv2")
 
 subset_versionshared_CpGs <- function(beta, array){
   

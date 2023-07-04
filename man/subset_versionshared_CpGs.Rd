@@ -17,6 +17,3 @@ beta matrix subset
 \description{
 Subset a beta matrix for v1.v2 compatible CpG-probes
 }
-\examples{
-subset_versionshared_CpGs(beta_merged, "EPICv2")
-}
