@@ -580,9 +580,7 @@ preprocessData <- function(input = "",
       'samples\n\n')
   
   # create a EPIC v1 v2 compatible subset of beta_merged
-  if(beta.subset.compatible == TRUE){
-    beta_merged_compatible <- subset_versionshared_CpGs(beta_merged, array)
-  }
+  beta_merged_compatible <- subset_versionshared_CpGs(beta_merged, array)
 
   # Save output
   cat('Begin save outputs...')
@@ -695,19 +693,42 @@ preprocessData <- function(input = "",
                     output_file = paste0(report, "4-beta-distributions.html", sep = ""))
   rmarkdown::render(input = paste0(system.file("rmd", "5-snr.Rmd", package = "eutopsQC")),
                     output_file = paste0(report, "5-snr.html", sep = ""))
-
-  if(exists("pheno") & array != "mouse"){
-    out <- epidish(beta.m = beta_merged,
-                   ref.m = centEpiFibIC.m,
-                   method = "RPC")$estF
-    ind <- match(pheno$basename, rownames(out))
-    pheno$ic <- out[ind,3]
+  
+  if (!grepl("v2", array, ignore.case = T)){
+    # note age, ic and smk indices calculated from beta_merged
+    
+    if(exists("pheno") & array != "mouse"){
+      out <- epidish(beta.m = beta_merged,
+                     ref.m = centEpiFibIC.m,
+                     method = "RPC")$estF
+      ind <- match(pheno$basename, rownames(out))
+      pheno$ic <- out[ind,3]
+    }
+    
+    rmarkdown::render(input = paste0(system.file("rmd", "6-age-ic-smk.Rmd", package = "eutopsQC")),
+                      output_file = paste0(report, "6-age-ic-smk.html", sep = ""))
+    
+  } else{
+    # EPIC v2
+    # age, ic and smk indices calculated from beta_merged_compatible (based on v1 IDs)
+    # suggest to add retrained, v1.v2 compatible age index to WID clocks packages
+    
+    if(exists("pheno")){
+      out <- epidish(beta.m = beta_merged_compatible,
+                     ref.m = centEpiFibIC.m,
+                     method = "RPC")$estF
+      ind <- match(pheno$basename, rownames(out))
+      pheno$ic <- out[ind,3]
+    }
+    
+    local({
+      beta_merged <- beta_merged_compatible
+      rmarkdown::render(input = paste0(system.file("rmd", "6-age-ic-smk.Rmd", package = "eutopsQC")),
+                        output_file = paste0(report, "6-age-ic-smk.html", sep = ""))
+    })
+    
   }
-
-
-  rmarkdown::render(input = paste0(system.file("rmd", "6-age-ic-smk.Rmd", package = "eutopsQC")),
-                    output_file = paste0(report, "6-age-ic-smk.html", sep = ""))
-
+  
   if(exists("pheno")){
     rmarkdown::render(input = paste0(system.file("rmd", "7-dimensred.Rmd", package = "eutopsQC")),
                       output_file = paste0(report, "7-dimensred.html", sep = ""))
