@@ -7,12 +7,12 @@
 subset_versionshared_CpGs(beta, array)
 }
 \arguments{
-\item{matrix}{beta_merged}
+\item{beta}{The preprocessed beta-matrix}
 
-\item{character}{"EPIC or "EPICv2"}
+\item{array}{The type of array that is preprocessed, e.g. EPICv2}
 }
 \value{
-beta matrix subset
+A beta-matrix subset, subsetted for sequence matched cg probes both on EPIC v1 and v2, with replicated probes averaged and v1 CpG names
 }
 \description{
 Subset a beta matrix for v1.v2 compatible CpG-probes

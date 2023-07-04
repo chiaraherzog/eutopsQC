@@ -3,9 +3,9 @@
 #' 
 #' Subset a beta matrix for v1.v2 compatible CpG-probes
 #'
-#' @param matrix beta_merged
-#' @param character "EPIC or "EPICv2"
-#' @return beta matrix subset
+#' @param beta The preprocessed beta-matrix
+#' @param array The type of array that is preprocessed, e.g. EPICv2
+#' @return A beta-matrix subset, subsetted for sequence matched cg probes both on EPIC v1 and v2, with replicated probes averaged and v1 CpG names
 #' @export
 
 subset_versionshared_CpGs <- function(beta, array){
