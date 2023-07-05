@@ -76,7 +76,9 @@
 #'
 #' @docType data
 #'
-#' @usage data(mapping_v1v2_CpGs)
+#' @global mapping_compatible_v1v2 IlmnID EPICv1_Loci
+#'
+#' @usage data(mapping_compatible_v1v2)
 "mapping_compatible_v1v2"
 
 #' packageList

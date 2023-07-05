@@ -26,7 +26,7 @@ subset_versionshared_CpGs <- function(beta, array){
       # (non-sequence match already removed from the map)
       
       # Find reps
-      dupes <- beta_subset |> 
+      dupes = beta_subset |> 
         janitor::get_dupes(EPICv1_Loci) |> 
         dplyr::pull(EPICv1_Loci) |> 
         unique()

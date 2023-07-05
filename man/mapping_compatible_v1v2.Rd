@@ -8,7 +8,7 @@
 An object of class \code{data.frame} with 724263 rows and 2 columns.
 }
 \usage{
-data(mapping_v1v2_CpGs)
+data(mapping_compatible_v1v2)
 }
 \description{
 mapping created using official EPICv2 and v1 manifests, latest March22, 2023
