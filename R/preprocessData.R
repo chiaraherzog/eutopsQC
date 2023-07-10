@@ -1,7 +1,7 @@
 #' preprocessData
 #'
 #' Pipeline to load and process raw data from the Illumina array
-#' Authors: James E. Barrett, Chiara Herzog
+#' Authors: James E. Barrett, Chiara Herzog, Charlotte Vavourakis
 #' Contact: james.barrett@ucl.ac.uk, chiara.herzog@uibk.ac.at
 #' note to fix? "ChaMP_normalization/" empty folder is left in location of script where preprocessData function is called from
 #'
@@ -31,7 +31,8 @@ preprocessData <- function(input = "",
                            save.rs = FALSE,
                            create.shiny = F,
                            find.files = F,
-                           run.name = NULL){
+                           run.name = NULL,
+                           beta.subset.compatible = F){
 
   # Install packages (if missing)
   eutopsQC::installBiocDependencies(eutopsQC::packageList)
@@ -473,13 +474,22 @@ preprocessData <- function(input = "",
   cat('DETECTION_P_THRESHOLD =',DETECTION_P_THRESHOLD,'\n\n')
 
   # combine all CpGs to remove
-  rm_names <- unique(c(chrY_names,non_CpG_names,snp_names,zhou_list,failed_probes))
-  cat('Removing', length(chrY_names),'chrY probes\n')
-  cat('Removing', length(non_CpG_names),'non-CpG probes\n')
-  cat('Removing', length(snp_names),'SNP probes\n')
-  cat('Removing', length(failed_probes),'failed probes (detP)\n')
-  cat('Removing', length(zhou_list),'Zhou SNP probes\n\n')
-
+  if (grepl("v2", array, ignore.case = T)){
+    rm_names <- unique(c(chrY_0_M_names_v2,non_CpG_names_v2,snp_names_v2,zhou_list_v2,failed_probes))
+    cat('Removing', length(chrY_0_M_names_v2),'chrY, chr0, chrM probes\n')
+    cat('Removing', length(non_CpG_names_v2),'non-CpG probes\n')
+    cat('Removing', length(snp_names_v2),'SNP probes flagged previously on v1\n')
+    cat('Removing', length(failed_probes),'failed probes (detP)\n')
+    cat('Removing', length(zhou_list_v2),'remaining Zhou SNP probes on v2\n\n')
+  } else {
+    rm_names <- unique(c(chrY_names,non_CpG_names,snp_names,zhou_list,failed_probes))
+    cat('Removing', length(chrY_names),'chrY probes\n')
+    cat('Removing', length(non_CpG_names),'non-CpG probes\n')
+    cat('Removing', length(snp_names),'SNP probes\n')
+    cat('Removing', length(failed_probes),'failed probes (detP)\n')
+    cat('Removing', length(zhou_list),'Zhou SNP probes\n\n')
+  }
+  
   input_dir_list <- output
 
   #check beta matrices and detP matrices are present for each plate
@@ -507,11 +517,8 @@ preprocessData <- function(input = "",
     load(paste(log,'/',p,'_detP.Rdata',sep=''))
 
     # remove probes and any bad samples
-    if(grepl("v2", array, ignore.case = T)){
-      ind.row <- match(stringr::str_split(rownames(beta_ssNOOB_filtered_norm), "_", simplify = T)[,1],rm_names)
-    } else {
-      ind.row <- match(rownames(beta_ssNOOB_filtered_norm),rm_names)
-      }
+    ind.row <- match(rownames(beta_ssNOOB_filtered_norm),rm_names)
+    
     beta_plate_filtered <- beta_ssNOOB_filtered_norm[is.na(ind.row),]
     rm(beta_ssNOOB_filtered_norm);invisible(gc())
 
@@ -571,38 +578,19 @@ preprocessData <- function(input = "",
       'CpGs and',
       ncol(beta_merged),
       'samples\n\n')
+  
+  # create a EPIC v1 v2 compatible subset of beta_merged
+  beta_merged_compatible <- subset_versionshared_CpGs(beta_merged, array)
 
   # Save output
   cat('Begin save outputs...')
-
-  if(grepl("v2", array, ignore.case = T)){
-    # Compute mean across duplicate probes
-    cat("Computing mean across duplicate probes (EPIC v2)...")
-
-    # Find dupes
-    c <- data.frame(cpgs = rownames(beta_merged))
-    c$cpgs_simple <- stringr::str_split(c$cpgs, "_", simplify = T)[,1]
-    dupes <- c |> janitor::get_dupes(cpgs_simple)
-
-    # non dupes - remove extra bit
-    beta_merged_nondupe <- beta_merged[!rownames(beta_merged) %in% dupes$cpgs,]
-    rownames(beta_merged_nondupe) <- stringr::str_split(rownames(beta_merged_nondupe), "_", simplify = T)[,1]
-
-    beta_merged_dupe <- beta_merged[rownames(beta_merged) %in% dupes$cpgs,] |>
-      as.data.frame() |>
-      tibble::rownames_to_column("cpg") |>
-      dplyr::mutate(cpg = stringr::str_split(cpg, "_", simplify = T)[,1]) |>
-      group_by(cpg) |>
-      dplyr::reframe(across(everything(), ~ mean(.x))) |>
-      ungroup() |> distinct() |>
-      tibble::column_to_rownames("cpg") |>
-      as.matrix()
-
-    # identical(colnames(beta_merged_dupe), colnames(beta_merged_nondupe))
-    beta_merged <- rbind(beta_merged_dupe, beta_merged_nondupe)
-  }
-
+  
   save(beta_merged, file=paste(output,'/beta_merged.Rdata',sep=''))
+  
+  if(beta.subset.compatible == TRUE){
+    save(beta_merged_compatible, file=paste(output,'/beta_merged_compatible.Rdata',sep=''))
+  }
+  
   cat(' done\n\n')
 
   # Remove intermediate files
@@ -705,19 +693,42 @@ preprocessData <- function(input = "",
                     output_file = paste0(report, "4-beta-distributions.html", sep = ""))
   rmarkdown::render(input = paste0(system.file("rmd", "5-snr.Rmd", package = "eutopsQC")),
                     output_file = paste0(report, "5-snr.html", sep = ""))
-
-  if(exists("pheno") & array != "mouse"){
-    out <- epidish(beta.m = beta_merged,
-                   ref.m = centEpiFibIC.m,
-                   method = "RPC")$estF
-    ind <- match(pheno$basename, rownames(out))
-    pheno$ic <- out[ind,3]
+  
+  if (!grepl("v2", array, ignore.case = T)){
+    # note age, ic and smk indices calculated from beta_merged
+    
+    if(exists("pheno") & array != "mouse"){
+      out <- epidish(beta.m = beta_merged,
+                     ref.m = centEpiFibIC.m,
+                     method = "RPC")$estF
+      ind <- match(pheno$basename, rownames(out))
+      pheno$ic <- out[ind,3]
+    }
+    
+    rmarkdown::render(input = paste0(system.file("rmd", "6-age-ic-smk.Rmd", package = "eutopsQC")),
+                      output_file = paste0(report, "6-age-ic-smk.html", sep = ""))
+    
+  } else{
+    # EPIC v2
+    # age, ic and smk indices calculated from beta_merged_compatible (based on v1 IDs)
+    # suggest to add retrained, v1.v2 compatible age index to WID clocks packages
+    
+    if(exists("pheno")){
+      out <- epidish(beta.m = beta_merged_compatible,
+                     ref.m = centEpiFibIC.m,
+                     method = "RPC")$estF
+      ind <- match(pheno$basename, rownames(out))
+      pheno$ic <- out[ind,3]
+    }
+    
+    local({
+      beta_merged <- beta_merged_compatible
+      rmarkdown::render(input = paste0(system.file("rmd", "6-age-ic-smk.Rmd", package = "eutopsQC")),
+                        output_file = paste0(report, "6-age-ic-smk.html", sep = ""))
+    })
+    
   }
-
-
-  rmarkdown::render(input = paste0(system.file("rmd", "6-age-ic-smk.Rmd", package = "eutopsQC")),
-                    output_file = paste0(report, "6-age-ic-smk.html", sep = ""))
-
+  
   if(exists("pheno")){
     rmarkdown::render(input = paste0(system.file("rmd", "7-dimensred.Rmd", package = "eutopsQC")),
                       output_file = paste0(report, "7-dimensred.html", sep = ""))

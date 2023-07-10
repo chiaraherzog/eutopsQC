@@ -7,7 +7,9 @@ Authors@R:
 Description: Pipeline runs a combination of minfi, ENmix and ChAMP to preprocess methylation data and produces a QC report.
 License: MIT + file LICENSE
 Encoding: UTF-8
-Roxygen: list(markdown = TRUE)
+Roxygen: list(
+    markdown = TRUE,
+    roclets = c("collate", "namespace", "rd", "roxyglobals::global_roclet"))
 RoxygenNote: 7.2.3
 Depends: 
     R (>= 2.10)
@@ -21,19 +23,26 @@ Imports:
     devtools,
     purrr,
     readr,
-    tidyverse, 
-    shiny, 
+    tidyverse,
+    shiny,
     kableExtra,
     stringr,
     formattable,
     plotly,
-    ggplot2, 
+    ggplot2,
     RPMM,
     cluster,
     DT,
-    locfit, 
+    locfit,
     ggdist,
     iterators,
     foreach,
     matrixStats,
-    Matrix
+    Matrix,
+    tibble,
+    janitor,
+    tidyselect
+Suggests: 
+    roxyglobals (>= 0.2.2)
+Remotes: 
+    anthonynorth/roxyglobals

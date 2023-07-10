@@ -16,8 +16,9 @@ preprocessData(
   overwrite = FALSE,
   save.rs = FALSE,
   create.shiny = F,
-  find.files = T,
-  run.name = NULL
+  find.files = F,
+  run.name = NULL,
+  beta.subset.compatible = F
 )
 }
 \arguments{
@@ -48,7 +49,7 @@ preprocessed beta matrix and QC report
 }
 \description{
 Pipeline to load and process raw data from the Illumina array
-Authors: James E. Barrett, Chiara Herzog
+Authors: James E. Barrett, Chiara Herzog, Charlotte Vavourakis
 Contact: james.barrett@ucl.ac.uk, chiara.herzog@uibk.ac.at
 note to fix? "ChaMP_normalization/" empty folder is left in location of script where preprocessData function is called from
 }
