@@ -1,0 +1,155 @@
+---
+title: "6. ic - age - smoking"
+output:
+  html_document:
+    code_folding: "hide"
+    theme: lumen
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+library(plotly)
+library(EpiDISH)
+library(WIDclocks)
+```
+
+This page provides information on estimated immune cell composition, WID age, and methylation of a CpG associated with smoking.
+
+# Estimated immune cell composition
+
+```{r fig.align = "center", fig.width = 6, fig.height = 4.5}
+if(any(grepl("_BC11", rownames(beta)))){
+  
+  print("Mouse array - to be defined")
+  
+} else if(!exists("pheno")) {
+  out <- epidish(beta.m = beta,
+                 ref.m = centEpiFibIC.m,
+                 method = "RPC")$estF
+  
+  plot <- out |>
+    as.data.frame() |>
+    tibble::rownames_to_column("basename") |>
+    ggplot(aes(x = basename,
+               y = IC,
+               colour = basename)) +
+    geom_point() +
+    ylim(0, 1) +
+    theme(legend.position = "none")
+  
+  ggplotly(plot)
+} else {
+  plot <- pheno |> 
+    ggplot(aes(x = basename,
+               y = ic)) +
+    geom_point() +
+    ylim(0,1)
+  
+  print(plot)
+}
+```
+
+# age
+
+
+
+```{r fig.align = "center", fig.width = 6, fig.height = 4.5}
+if(any(grepl("_BC11", rownames(beta)))){
+  
+  print("Mouse array - to be defined")
+  
+} else {
+  if(exists("pheno") && any(colnames(pheno) == "age")){
+    intersect <- intersect(colnames(beta), pheno$basename)
+    pheno <- pheno[match(intersect, pheno$basename),]
+    beta <- beta[,match(intersect, colnames(beta))]
+    pheno$widage <- WID_clocks(beta)$WID_general_clock 
+    
+    if(all(pheno$widage>0)){
+      ylim = c(0, 90)
+    } else {
+      ylim <- c(min(pheno$widage)+min(pheno$widage)*0.9, max(pheno$widage)+max(pheno$widage*0.9))
+    }
+    
+    plot <- pheno |> 
+      ggplot(aes(x = age,
+                 y = widage,
+               colour = basename)) +
+      geom_point() +
+      xlim(0, 90) + ylim(0, 90) +
+      xlab("chronological age") + ylab("WID-general age") +
+      theme(axis.text.x = element_text(angle = 60,
+            hjust = 0))
+    
+    plotly::ggplotly(plot)
+  } else {
+    widage <- WID_clocks(beta)$WID_general_clock 
+    
+    tmp <- data.frame(age = widage, 
+                      basename = names(widage))
+    
+    if(all(widage>0)){
+      ylim = c(0, 90)
+    } else {
+      ylim <- c(min(widage)+min(widage)*0.9, max(widage)+max(widage*0.9))
+    }
+    
+    plot <- tmp |> 
+      ggplot(aes(x = as.factor(basename),
+                 y = age,
+                 colour = as.factor(basename))) +
+      geom_point() +
+      theme(legend.position = "none") +
+      xlab("") + ylim(ylim) +
+      geom_hline(yintercept = 0, linetype = "dotted",
+                 colour = "grey40",
+                 size = 0.5) +
+      theme(axis.text.x = element_text(angle = 60,
+            hjust = 0))
+    
+    plotly::ggplotly(plot)
+  }
+}
+
+```
+
+# smoking cpg
+
+```{r fig.align = "center", fig.width = 5.5, fig.height = 4.5}
+if(any(grepl("_BC11", rownames(beta)))){
+  
+  print("Mouse array - NA")
+  
+} else {
+    if(exists("pheno") && any(colnames(pheno) == "smoking") && "cg16867657" %in% rownames(beta)){
+    intersect <- intersect(colnames(beta), pheno$basename)
+    pheno <- pheno[match(intersect, pheno$basename),]
+    beta <- beta[,match(intersect, colnames(beta))]
+    pheno$index <- as.numeric(beta["cg16867657",])
+    plot <- pheno |>
+      ggplot(aes(x = smoking,
+                 y = index,
+               colour = basename)) +
+      geom_point() +
+      ylab("cg16867657 methylation")
+    
+    ggplotly(plot)
+  } else {
+    tmp <- data.frame(smk = as.numeric(beta["cg16867657",]), 
+               basename = colnames(beta))
+    
+    plot <- tmp |>
+      ggplot(aes(x = as.factor(basename),
+                 y = smk,
+                 colour = as.factor(basename))) +
+      geom_point() +
+      theme(legend.position = "none") +
+      xlab("") +
+      ylab("cg16867657 methylation")
+    
+    ggplotly(plot)
+  }
+}
+```
+

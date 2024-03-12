@@ -1,0 +1,137 @@
+---
+title: "7. Dimensionality reduction"
+output:
+  html_document:
+    code_folding: "hide"
+    theme: paper
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+library(plotly)
+library(dplyr)
+library(ggplot2)
+
+coerce_numeric <- function(beta){
+    beta_tmp <- matrix(NA, nrow=nrow(beta), ncol=ncol(beta))
+    for(i in 1:ncol(beta)){
+      beta_tmp[,i] <- as.numeric(beta[,i])
+    }
+    colnames(beta_tmp) <- colnames(beta)
+    rownames(beta_tmp) <- rownames(beta)
+    beta <- beta_tmp
+    rm(beta_tmp);gc()
+    return(beta)
+}
+
+# fix any potential difftime issues
+pheno <- pheno |> 
+  dplyr::mutate_if(lubridate::is.difftime, as.numeric)
+```
+
+* Multidimensional scaling (principal component analysis): linear dimensionality reduction
+* A heatmap of p values for principal components and (if provided, their association with provided phenotypic values) is shown on the bottom of the page to identify potential batch effects.
+
+# MDS
+
+```{r fig.align = "center", fig.width = 4.5, fig.height = 6}
+beta <- coerce_numeric(beta)
+
+intersect <- intersect(pheno$basename, colnames(beta))
+beta <- beta[,match(intersect, colnames(beta))]
+pheno <- pheno[match(intersect, pheno$basename),]
+
+# Grab top 10000 variable CpGs
+x <- matrixStats::rowSds(beta)
+names(x) <- rownames(beta)
+top10 <- x[order(x, decreasing = T)][1:10000]
+b <- beta[names(top10),]
+d <- dist(t(b))
+fit <- cmdscale(d,eig=TRUE, k=2)
+
+x <- fit$points[,1]
+y <- fit$points[,2]
+
+pheno$pc1 <- x
+pheno$pc2 <- y
+
+# Save pheno
+save(pheno, file = paste0(log, "/pheno_qc.Rdata"))
+
+variables <- colnames(pheno)[!colnames(pheno) %in% c("basename",
+                                                     "umap1",
+                                                     "umap2",
+                                                     "pc1", "pc2", "widage")]
+plt <- htmltools::tagList()
+i <- 1
+for (var in variables){
+  x <- pheno %>%
+    ggplot(aes(x = pc1,
+               y = pc2,
+               colour = .data[[var]])) +
+    geom_point() +
+    ggtitle(var) +
+    theme(legend.title = element_blank(),
+          aspect.ratio = 1)
+  
+  plt[[i]] <- as_widget(ggplotly(x))
+  i <- i + 1
+}
+
+plt
+```
+
+
+# PCA
+
+```{r}
+fit <- prcomp(t(b[1:10000,]),retx=TRUE,scale.=FALSE,center=TRUE)
+
+if(ncol(b)<=10){
+  P <- ncol(b)-1
+  } else {
+    P <- 10
+} # gives first P principal components
+
+pdat <- pheno |>
+  dplyr::select(where(~ length(unique(na.omit(.)))>1)) |>  # Keep only columns which have more than one unique value for batch effect analysis.
+  dplyr::select(-c(basename, pc1, pc2)) |> 
+  mutate_if(is.character,as.factor) |> 
+  as.data.frame()
+
+pval <- matrix(NA, nrow = ncol(pdat), ncol = P)
+X <- fit$x[,1:P]
+
+rownames(pval) <- colnames(pdat)
+colnames(pval) <- colnames(X)
+
+# loop over each phenotypic trait
+for (i in 1:ncol(pdat)){
+  
+  #loop over each of the P principal components
+  for (j in 1:P){
+    
+    # if factor do kruskal wallis test
+    if (is.factor(pdat[,i])){
+      tst <- kruskal.test(X[,j],pdat[,i])
+      pval[i,j] <- tst$p.value
+    }
+    
+    # if numeric look for correlation
+    if (is.numeric(pdat[,i])){
+      tst <- cor.test(X[,j],pdat[,i])
+      pval[i,j] <- tst$p.value
+    }
+  }
+}
+
+pval[pval==0] <- 1e-100
+
+plot_ly(x=colnames(pval),
+        y=rownames(pval),
+        z=log10(pval),
+        colors = colorRamp(c("red", "yellow", "white")),
+        type='heatmap')%>%
+  config(displayModeBar = FALSE)
+```

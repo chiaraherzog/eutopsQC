@@ -1,0 +1,66 @@
+---
+title: "1. Summary"
+output:
+  html_document:
+    code_folding: "hide"
+    theme: paper
+---
+
+```{r setup, include=FALSE}
+# rmarkdown::render_site()
+knitr::opts_chunk$set(echo = FALSE, message = F, warning = F)
+library(kableExtra)
+library(formattable)
+library(eutopsQC)
+path <- log
+
+rm_names <- unique(c(chrY_names,non_CpG_names,snp_names,zhou_list))
+```
+
+This page provides an overview of the sample failure rate per beadchip. Of note, `r length(rm_names)` probes (~10% of probes on the EPIC array) are removed during QC as default as they have been flagged as Chromosome Y probes, non-CpG probes, SNP probes, or otherwise unreliable probes, leaving a total of `r as.character(866238-length(rm_names))` probes. The remainder of probes may be removed during QC for other reasons (e.g. failed detection p value).
+
+```{r}
+# Construct data frame
+n = 1
+log_df <- data.frame(Experiment = run.name,
+                     Sample_count = rep(NA,n),
+                     Probe_count = rep(nrow(beta),n),
+                     Removed_sample_count = rep(NA,n))
+
+log_df$Probe_count <- paste0(nrow(beta), " / ",
+                             log_data$n_probes[1],
+                             " (", round(nrow(beta)/log_data$n_probes[1]*100, 1), "%)")
+
+log_df$Sample_count <- ncol(beta)
+sentrix_id <- stringr::str_split(b, "_", simplify = T)[,1]
+
+if(!is.na(log_data$rm_sample_list)){
+  log_df$Removed_sample_count <- paste0(length(log_data$rm_sample_list))
+} else {
+  log_df$Removed_sample_count <- "0"
+}
+
+colnames(log_df) <- c('Experiment',
+                      'Samples',
+                      'Probes',
+                      'Removed samples')
+
+kable(log_df) |>
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+## List of removed samples
+
+```{r}
+if((length(log_data$rm_sample_list)>0 & !is.na(paste0(log_data$rm_sample_list, collapse = ",")))){
+rm <- pheno[match(na.omit(log_data$rm_sample_list), pheno$basename),] |> 
+  dplyr::distinct()
+
+rm |> 
+  dplyr::filter(!is.na(basename)) |> 
+  DT::datatable()
+} else {
+  cat("No samples were removed.")
+}
+```
+

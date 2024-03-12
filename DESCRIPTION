@@ -1,6 +1,6 @@
 Package: eutopsQC
 Title: EUTOPS preprocessing and quality control pipeline
-Version: 1.0
+Version: 1.1
 Authors@R: 
     person("Chiara", "Herzog", , "chiara.herzog@uibk.ac.at", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-1572-498X"))
