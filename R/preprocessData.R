@@ -16,6 +16,7 @@
 #' @param save.rs save SNP (rs) probe values. FALSE by default.
 #' @param find.files only selects those files specified in basename from a given folder. REQUIRES a pheno file with basename column, run.name, and sets by.dir to F (not applicable)
 #' @param run.name NULL by default, required for find.files (not using plate/batch names)
+#' @param beta.subset.compatible EPICv2 only, should EPIC v1/V2 compatible subset be provided?
 #' @return preprocessed beta matrix and QC report
 #' @export
 
@@ -489,7 +490,7 @@ preprocessData <- function(input = "",
     cat('Removing', length(failed_probes),'failed probes (detP)\n')
     cat('Removing', length(zhou_list),'Zhou SNP probes\n\n')
   }
-  
+
   input_dir_list <- output
 
   #check beta matrices and detP matrices are present for each plate
@@ -518,7 +519,7 @@ preprocessData <- function(input = "",
 
     # remove probes and any bad samples
     ind.row <- match(rownames(beta_ssNOOB_filtered_norm),rm_names)
-    
+
     beta_plate_filtered <- beta_ssNOOB_filtered_norm[is.na(ind.row),]
     rm(beta_ssNOOB_filtered_norm);invisible(gc())
 
@@ -578,19 +579,19 @@ preprocessData <- function(input = "",
       'CpGs and',
       ncol(beta_merged),
       'samples\n\n')
-  
+
   # create a EPIC v1 v2 compatible subset of beta_merged
   beta_merged_compatible <- subset_versionshared_CpGs(beta_merged, array)
 
   # Save output
   cat('Begin save outputs...')
-  
+
   save(beta_merged, file=paste(output,'/beta_merged.Rdata',sep=''))
-  
+
   if(beta.subset.compatible == TRUE){
     save(beta_merged_compatible, file=paste(output,'/beta_merged_compatible.Rdata',sep=''))
   }
-  
+
   cat(' done\n\n')
 
   # Remove intermediate files
@@ -693,10 +694,10 @@ preprocessData <- function(input = "",
                     output_file = paste0(report, "4-beta-distributions.html", sep = ""))
   rmarkdown::render(input = paste0(system.file("rmd", "5-snr.Rmd", package = "eutopsQC")),
                     output_file = paste0(report, "5-snr.html", sep = ""))
-  
+
   if (!grepl("v2", array, ignore.case = T)){
     # note age, ic and smk indices calculated from beta_merged
-    
+
     if(exists("pheno") & array != "mouse"){
       out <- epidish(beta.m = beta_merged,
                      ref.m = centEpiFibIC.m,
@@ -704,15 +705,15 @@ preprocessData <- function(input = "",
       ind <- match(pheno$basename, rownames(out))
       pheno$ic <- out[ind,3]
     }
-    
+
     rmarkdown::render(input = paste0(system.file("rmd", "6-age-ic-smk.Rmd", package = "eutopsQC")),
                       output_file = paste0(report, "6-age-ic-smk.html", sep = ""))
-    
+
   } else{
     # EPIC v2
     # age, ic and smk indices calculated from beta_merged_compatible (based on v1 IDs)
     # suggest to add retrained, v1.v2 compatible age index to WID clocks packages
-    
+
     if(exists("pheno")){
       out <- epidish(beta.m = beta_merged_compatible,
                      ref.m = centEpiFibIC.m,
@@ -720,15 +721,15 @@ preprocessData <- function(input = "",
       ind <- match(pheno$basename, rownames(out))
       pheno$ic <- out[ind,3]
     }
-    
+
     local({
       beta_merged <- beta_merged_compatible
       rmarkdown::render(input = paste0(system.file("rmd", "6-age-ic-smk.Rmd", package = "eutopsQC")),
                         output_file = paste0(report, "6-age-ic-smk.html", sep = ""))
     })
-    
+
   }
-  
+
   if(exists("pheno")){
     rmarkdown::render(input = paste0(system.file("rmd", "7-dimensred.Rmd", package = "eutopsQC")),
                       output_file = paste0(report, "7-dimensred.html", sep = ""))

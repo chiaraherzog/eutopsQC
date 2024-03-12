@@ -1,21 +1,23 @@
 #' preprocessData
 #'
 #' Pipeline to load and process raw data from the Illumina array
-#' Authors: James E. Barrett, Chiara Herzog, Charlotte Vavourakis
-#' Contact: james.barrett@ucl.ac.uk, chiara.herzog@uibk.ac.at
+#' Authors: Chiara Herzog
+#' Contact: chiara.herzog@uibk.ac.at
 #' note to fix? "ChaMP_normalization/" empty folder is left in location of script where preprocessData function is called from
 #'
-#' @param input Path to the input directory (raw IDAT folder)
+#' @param input Path to the input signal matrix
 #' @param output Path to output directory (this is where beta file will be saved)
 #' @param report Path to report directory (this is where the report will be saved to)
 #' @param array Methylation array type, EPIC by default
 #' @param cores cores to be used for ChAMP normalisation. 4 by default
-#' @param pheno phenotypic file. NULL by default. If pheno file is provided, it must have a column named basename with identical names to IDAT files. File can be provided as Rdata, RDS, .txt or .csv. Each column will be included in the batch effect correction. Ensure that no column exists with entirely identical variables
-#' @param by.dir process by directory instead. FALSE by default. The result will not be different, but by.dir = T can be slower (for smaller projects), yet it is recommended for large projects.
+#' @param pheno phenotypic file. NULL by default, should be provided
 #' @param overwrite overwrite existing output folder. FALSE by default to prevent any accidental overwriting.
-#' @param save.rs save SNP (rs) probe values. FALSE by default.
-#' @param find.files only selects those files specified in basename from a given folder. REQUIRES a pheno file with basename column, run.name, and sets by.dir to F (not applicable)
-#' @param run.name NULL by default, required for find.files (not using plate/batch names)
+#' @param beta.subset.compatible EPICv2 only, should EPIC v1/V2 compatible subset be provided?
+#' @param meth column name (grep) of methylated signal
+#' @param unmeth column name (grep) of unmethylated signal
+#' @param detPname detP name (grep)
+#' @param sep separator for index file, '\t' by default
+#' @param run.name NULL by default
 #' @return preprocessed beta matrix and QC report
 #' @export
 
@@ -30,7 +32,7 @@ preprocessDataSigMatrix <- function(input = "",
                                     beta.subset.compatible = F,
                                     meth = 'Signal_A',
                                     unmeth = 'Signal_B',
-                                    detP = 'Detection.Pval',
+                                    detPname = 'Detection.Pval',
                                     sep = '\t'){
 
   # Install packages (if missing)
@@ -315,7 +317,7 @@ preprocessDataSigMatrix <- function(input = "",
                     output_file = paste0(report, "index.html", sep = ""))
 
   rmarkdown::render(input = paste0(syste.file("rmd", "1-plate-summary_SigMatrix.Rmd",
-                                              package = "eutopsQC"))
+                                              package = "eutopsQC")),
                     output_file = paste0(report, "1-plate-summary.html"))
 
   rmarkdown::render(input = paste0(system.file("rmd", "2-qc_SigMatrix.Rmd",
@@ -373,7 +375,8 @@ preprocessDataSigMatrix <- function(input = "",
 
   }
 
-  rmarkdown::render(input = paste0(system.file("rmd", "5-pca.Rmd", package = "eutopsQC")),
+  rmarkdown::render(input = paste0(system.file("rmd", "5-pca.Rmd",
+                                               package = "eutopsQC")),
                       output_file = paste0(report, "5-pca.html", sep = ""))
 
   cat('Session info:\n\n')
