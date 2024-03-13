@@ -43,6 +43,8 @@ preprocessData(
 \item{find.files}{only selects those files specified in basename from a given folder. REQUIRES a pheno file with basename column, run.name, and sets by.dir to F (not applicable)}
 
 \item{run.name}{NULL by default, required for find.files (not using plate/batch names)}
+
+\item{beta.subset.compatible}{EPICv2 only, should EPIC v1/V2 compatible subset be provided?}
 }
 \value{
 preprocessed beta matrix and QC report

@@ -32,7 +32,6 @@ log_df$Probe_count <- paste0(nrow(beta), " / ",
                              " (", round(nrow(beta)/log_data$n_probes[1]*100, 1), "%)")
 
 log_df$Sample_count <- ncol(beta)
-sentrix_id <- stringr::str_split(b, "_", simplify = T)[,1]
 
 if(!is.na(log_data$rm_sample_list)){
   log_df$Removed_sample_count <- paste0(length(log_data$rm_sample_list))

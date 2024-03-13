@@ -13,11 +13,12 @@
 #' @param pheno phenotypic file. NULL by default, should be provided
 #' @param overwrite overwrite existing output folder. FALSE by default to prevent any accidental overwriting.
 #' @param beta.subset.compatible EPICv2 only, should EPIC v1/V2 compatible subset be provided?
-#' @param meth column name (grep) of methylated signal
-#' @param unmeth column name (grep) of unmethylated signal
+#' @param Mname column name (grep) of methylated signal
+#' @param Uname column name (grep) of unmethylated signal
 #' @param detPname detP name (grep)
-#' @param sep separator for index file, '\t' by default
+#' @param sep separator for index file, tab by default
 #' @param run.name NULL by default
+#' @param filter.loci should detP/other sites be filtered out?
 #' @return preprocessed beta matrix and QC report
 #' @export
 
@@ -30,10 +31,11 @@ preprocessDataSigMatrix <- function(input = "",
                                     overwrite = FALSE,
                                     run.name = NULL,
                                     beta.subset.compatible = F,
-                                    meth = 'Signal_A',
-                                    unmeth = 'Signal_B',
+                                    Uname = 'Signal_A',
+                                    Mname = 'Signal_B',
                                     detPname = 'Detection.Pval',
-                                    sep = '\t'){
+                                    sep = '\t',
+                                    filter.loci = F){
 
   # Install packages (if missing)
   eutopsQC::installBiocDependencies(eutopsQC::packageList)
@@ -81,12 +83,10 @@ preprocessDataSigMatrix <- function(input = "",
 
   # Check if pheno files are present
   bnames <- as.character(stringr::str_split(readLines(input, n = 1), "\t|,", simplify = T))
-  pheno$basename <- pheno$sampleid
 
-  if(!all(grep(paste0(pheno$sampleid, collapse = '|'), bnames))){
+  if(!all(grep(paste0(pheno$basename, collapse = '|'), bnames))){
     warning('Not all pheno ids found in signal matrix.')
   }
-
 
   # Begin pipeline
   cat('Beginning signal matrix load and preprocessing pipeline...\n\n')
@@ -192,66 +192,75 @@ preprocessDataSigMatrix <- function(input = "",
   log_data$n_probes <- nrow(beta)
 
   # check that no bad samples are present:
-  beta <- beta[,!colnames(beta) %in% samples_to_remove]
+  if(!all(!colnames(beta) %in% samples_to_remove)){
+    warning("removed samples in beta matrix")
+  }
 
   # Probe bias correction using BMIQ
   if (grepl("v2", array, ignore.case = T)){
     cat('Begin BMIQ normalisation using', array, 'version...\n')
     beta_ssNOOB_filtered_norm <- invisible(eutopsQC:::champ.normv2(beta=beta,
                                                                    arraytype=array,
+                                                                   method = 'BMIQ',
                                                                    cores=cores))
     cat('done\n')
   } else {
     cat('Begin BMIQ normalisation using', array, 'version...\n')
     beta_ssNOOB_filtered_norm <- invisible(champ.norm(beta=beta,
                                                       arraytype=array,
+                                                      method = 'BMIQ',
                                                       cores=cores))
     cat('done\n')
   }
 
-  DETECTION_P_THRESHOLD <- 0.01   # maximum detection p-value
-  FAILED_SAMPLE_THRESHOLD <- 0.1   # maximum proportion of failed samples per probe
-  cat('DETECTION_P_THRESHOLD =',DETECTION_P_THRESHOLD,'\n')
-  cat('FAILED_SAMPLE_THRESHOLD =',FAILED_SAMPLE_THRESHOLD,'\n\n')
+  if(filter.loci == T){
+    DETECTION_P_THRESHOLD <- 0.01   # maximum detection p-value
+    FAILED_SAMPLE_THRESHOLD <- 0.1   # maximum proportion of failed samples per probe
+    cat('DETECTION_P_THRESHOLD =',DETECTION_P_THRESHOLD,'\n')
+    cat('FAILED_SAMPLE_THRESHOLD =',FAILED_SAMPLE_THRESHOLD,'\n\n')
 
-  # Remove any failed probes
-  failed_probes <- rownames(detP)[rowSums(detP>DETECTION_P_THRESHOLD)>(ncol(detP)*FAILED_SAMPLE_THRESHOLD)]
+    # Remove any failed probes
+    failed_probes <- rownames(detP)[rowSums(detP>DETECTION_P_THRESHOLD)>(ncol(detP)*FAILED_SAMPLE_THRESHOLD)]
 
-  # combine all CpGs to remove
-  if (grepl("v2", array, ignore.case = T)){
-    rm_names <- unique(c(chrY_0_M_names_v2,non_CpG_names_v2,snp_names_v2,zhou_list_v2,failed_probes))
-    cat('Removing', length(chrY_0_M_names_v2),'chrY, chr0, chrM probes\n')
-    cat('Removing', length(non_CpG_names_v2),'non-CpG probes\n')
-    cat('Removing', length(snp_names_v2),'SNP probes flagged previously on v1\n')
-    cat('Removing', length(failed_probes),'failed probes (detP)\n')
-    cat('Removing', length(zhou_list_v2),'remaining Zhou SNP probes on v2\n\n')
+    # combine all CpGs to remove
+    if (grepl("v2", array, ignore.case = T)){
+      rm_names <- unique(c(chrY_0_M_names_v2,non_CpG_names_v2,snp_names_v2,zhou_list_v2,failed_probes))
+      cat('Removing', length(chrY_0_M_names_v2),'chrY, chr0, chrM probes\n')
+      cat('Removing', length(non_CpG_names_v2),'non-CpG probes\n')
+      cat('Removing', length(snp_names_v2),'SNP probes flagged previously on v1\n')
+      cat('Removing', length(failed_probes),'failed probes (detP)\n')
+      cat('Removing', length(zhou_list_v2),'remaining Zhou SNP probes on v2\n\n')
+    } else {
+      rm_names <- unique(c(chrY_names,non_CpG_names,snp_names,zhou_list,failed_probes))
+      cat('Removing', length(chrY_names),'chrY probes\n')
+      cat('Removing', length(non_CpG_names),'non-CpG probes\n')
+      cat('Removing', length(snp_names),'SNP probes\n')
+      cat('Removing', length(failed_probes),'failed probes (detP)\n')
+      cat('Removing', length(zhou_list),'Zhou SNP probes\n\n')
+    }
+
+
+    # remove probes and any bad samples
+    ind.row <- match(rownames(beta_ssNOOB_filtered_norm),rm_names)
+    beta_filtered <- beta_ssNOOB_filtered_norm[is.na(ind.row),]
+  #
+  #   # Imputation
+  #   r <- rowSums(is.na(beta_filtered))
+  #   if(sum(r > 0.8*ncol(beta_filtered))>0){
+  #     beta_filtered <- beta_filtered[(r < 0.8*ncol(beta_filtered))>0, ]
+  #     cat('!! Probe failure in more than 80% of samples for',
+  #         sum(r > 0.8*ncol(beta_filtered)),
+  #         'probes on plate',p,'(removed from beta matrix)\n')
+  #   }
+  #
+  #   out <- capture.output(beta_filtered_imputed <- impute::impute.knn(beta_filtered,k=10,rowmax=0.8)$data)
+  #   rm(beta_filtered);invisible(gc())
+
+    beta <- beta_filtered
+
   } else {
-    rm_names <- unique(c(chrY_names,non_CpG_names,snp_names,zhou_list,failed_probes))
-    cat('Removing', length(chrY_names),'chrY probes\n')
-    cat('Removing', length(non_CpG_names),'non-CpG probes\n')
-    cat('Removing', length(snp_names),'SNP probes\n')
-    cat('Removing', length(failed_probes),'failed probes (detP)\n')
-    cat('Removing', length(zhou_list),'Zhou SNP probes\n\n')
+    beta <- beta_ssNOOB_filtered_norm
   }
-
-
-  # remove probes and any bad samples
-  ind.row <- match(rownames(beta_ssNOOB_filtered_norm),rm_names)
-  beta_filtered <- beta_ssNOOB_filtered_norm[is.na(ind.row),]
-
-  # Imputation
-  r <- rowSums(is.na(beta_filtered))
-  if(sum(r > 0.8*ncol(beta_filtered))>0){
-    beta_filtered <- beta_filtered[(r < 0.8*ncol(beta_filtered))>0, ]
-    cat('!! Probe failure in more than 80% of samples for',
-        sum(r > 0.8*ncol(beta_filtered)),
-        'probes on plate',p,'(removed from beta matrix)\n')
-  }
-
-  out <- capture.output(beta_filtered_imputed <- impute::impute.knn(beta_filtered,k=10,rowmax=0.8)$data)
-  rm(beta_plate_filtered);invisible(gc())
-
-  beta <- beta_filtered_imputed
 
   cat('\nBeta matrix has',
       nrow(beta),
@@ -294,6 +303,16 @@ preprocessDataSigMatrix <- function(input = "",
 
   save(log_data, file=paste(log,'/', run.name, '_log_data.Rdata',sep=''))
 
+  if(!identical(pheno$basename, colnames(beta))){
+
+    if(all(grep(paste0(pheno$basename, collapse = "|"), colnames(beta)))){
+      ind <- grep(paste0(pheno$basename, collapse = "|"), colnames(beta))
+      beta <- as.matrix(beta[,ind])
+      colnames(beta) <- pheno$basename
+      beta <- as.matrix(beta)
+    }
+  }
+
   save(beta, file = paste0(output, '/beta.Rdata', sep = ''))
 
   if(array == 'EPICv2' & beta.subset.compatible == T){
@@ -305,79 +324,60 @@ preprocessDataSigMatrix <- function(input = "",
 
   # Create a report
   cat('Creating RMarkdown Report...\n')
-  file.copy(from = paste0(system.file("rmd", "_site_SigMatrix.yml",
-                                      package = "eutopsQC")),
-            to = paste0(report, "_site.yml"))
-
-  # file.copy(from = "~/Documents/Work/Code/preprocessing/eutopsQC/inst/rmd/_site_SigMatrix.yml",
-  #           to = paste0(report, "_site.yml"))
-
-  rmarkdown::render(input = paste0(system.file("rmd", "index_SigMatrix.Rmd",
+  rmarkdown::render(input = paste0(system.file("rmd", "SigMatrix", "index_SigMatrix.Rmd",
                                                package = "eutopsQC")),
-                    output_file = paste0(report, "index.html", sep = ""))
+                    output_file = paste0(report, "index.html"))
 
-  rmarkdown::render(input = paste0(syste.file("rmd", "1-plate-summary_SigMatrix.Rmd",
+  rmarkdown::render(input = paste0(system.file("rmd", "SigMatrix", "1-plate-summary_SigMatrix.Rmd",
                                               package = "eutopsQC")),
                     output_file = paste0(report, "1-plate-summary.html"))
 
-  rmarkdown::render(input = paste0(system.file("rmd", "2-qc_SigMatrix.Rmd",
+  rmarkdown::render(input = paste0(system.file("rmd", "SigMatrix", "2-qc_SigMatrix.Rmd",
                                                package = "eutopsQC")),
-                    output_file = paste0(report, "2-qc.html", sep = ""))
+                    output_file = paste0(report, "2-qc.html"))
 
-  rmarkdown::render(input = paste0(system.file("rmd", "3-beta-distributions_SigMatrix.Rmd",
+  rmarkdown::render(input = paste0(system.file("rmd", "SigMatrix", "3-beta-distributions_SigMatrix.Rmd",
                                                package = "eutopsQC")),
-                    output_file = paste0(report, "3-beta-distributions.html", sep = ""))
-
-
-  if(!identical(pheno$basename, colnames(beta))){
-
-    if(all(grep(paste0(pheno$basename, collapse = "|"), colnames(beta)))){
-    ind <-grep(paste0(pheno$basename, collapse = "|"), colnames(beta))
-    beta <- beta[,ind]
-    colnames(beta)<- pheno$basename
-    }
-  }
+                    output_file = paste0(report, "3-beta-distributions.html"))
 
   if (!grepl("v2", array, ignore.case = T)){
     # note age, ic and smk indices calculated from beta
 
     if(exists("pheno") & array != "mouse"){
-      out <- epidish(beta.m = beta,
+      out <- EpiDISH::epidish(beta.m = beta,
                      ref.m = centEpiFibIC.m,
                      method = "RPC")$estF
       ind <- match(pheno$basename, rownames(out))
       pheno$ic <- out[ind,3]
     }
 
-    rmarkdown::render(input = paste0(system.file("rmd", "4-age-ic-qc_SigMatrix.Rmd",
+    rmarkdown::render(input = paste0(system.file("rmd", "SigMatrix", "4-age-ic-qc_SigMatrix.Rmd",
                                                  package = "eutopsQC")),
-                      output_file = paste0(report, "4-age-ic-smk.html", sep = ""))
+                      output_file = paste0(report, "4-age-ic-smk.html"))
 
   } else{
     # EPIC v2
     # age, ic and smk indices calculated from beta_merged_compatible (based on v1 IDs)
     # suggest to add retrained, v1.v2 compatible age index to WID clocks packages
 
-    if(exists("pheno")){
       out <- epidish(beta.m = beta_merged_compatible,
                      ref.m = centEpiFibIC.m,
                      method = "RPC")$estF
       ind <- match(pheno$basename, rownames(out))
       pheno$ic <- out[ind,3]
-    }
 
     local({
       beta <- beta_merged_compatible
-      rmarkdown::render(input = paste0(system.file("rmd", "4-age-ic-qc_SigMatrix.Rmd",
+      rmarkdown::render(input = paste0(system.file("rmd", "SigMatrix", "4-age-ic-qc_SigMatrix.Rmd",
                                                    package = "eutopsQC")),
-                        output_file = paste0(report, "4-age-ic-smk.html", sep = ""))
+                        output_file = paste0(report, "4-age-ic-smk.html"))
     })
 
   }
 
-  rmarkdown::render(input = paste0(system.file("rmd", "5-pca.Rmd",
+  rmarkdown::render(input = paste0(system.file("rmd", "SigMatrix", "5-pca.Rmd",
                                                package = "eutopsQC")),
-                      output_file = paste0(report, "5-pca.html", sep = ""))
+                      output_file = paste0(report, "5-pca.html"))
 
   cat('Session info:\n\n')
   print(sessionInfo())

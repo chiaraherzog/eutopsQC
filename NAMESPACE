@@ -3,5 +3,6 @@
 export(champ.normv2)
 export(installBiocDependencies)
 export(preprocessData)
+export(preprocessDataSigMatrix)
 export(rhoEstimator)
 export(subset_versionshared_CpGs)

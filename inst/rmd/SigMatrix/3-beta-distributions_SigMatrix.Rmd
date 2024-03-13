@@ -20,7 +20,7 @@ path <- log
 This page shows methylation beta value densities after Probe type bias correction (ChAMP::BMIQ).
 
 ```{r, warning = FALSE, message=FALSE}
-load(paste(log,'/', run.name, '_beta_density_plot.Rdata',sep=''))
+load(paste(log, '/', run.name, '_beta_density_plot.Rdata',sep=''))
 
 p
 ```

@@ -15,5 +15,5 @@ navbar:
          href: 3-beta-distributions.html
        - text: "4. Age-ic-smoking"
          href: 4-age-ic-smk.html
-       - text: "5. Dimensionality reduction"
-         href: 5-dimensred.html
+       - text: "5. Dimensionality reduction/PCA"
+         href: 5-pca.html
