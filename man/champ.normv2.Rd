@@ -22,6 +22,14 @@ champ.normv2(
 
 \item{mset}{Mset (optional)}
 
+\item{resultsDir}{directory with results}
+
+\item{method}{type of normalisation, defaults to BMIQ}
+
+\item{plotBMIQ}{should output be plotted? F by default}
+
+\item{arraytype}{type of array.}
+
 \item{cores}{used cores, default = 4}
 }
 \value{

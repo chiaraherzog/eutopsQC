@@ -36,9 +36,13 @@ preprocessData(
 
 \item{by.dir}{process by directory instead. FALSE by default. The result will not be different, but by.dir = T can be slower (for smaller projects), yet it is recommended for large projects.}
 
+\item{path_to_bad_sample_list}{If any samples should be excluded that have previously been identified as problematic, these can be provided here as a link to a csv file}
+
 \item{overwrite}{overwrite existing output folder. FALSE by default to prevent any accidental overwriting.}
 
 \item{save.rs}{save SNP (rs) probe values. FALSE by default.}
+
+\item{create.shiny}{should a shiny object for control/density visualisation be created? F by default, because this generates large objects.}
 
 \item{find.files}{only selects those files specified in basename from a given folder. REQUIRES a pheno file with basename column, run.name, and sets by.dir to F (not applicable)}
 

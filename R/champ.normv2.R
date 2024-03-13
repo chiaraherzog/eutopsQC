@@ -6,6 +6,10 @@
 #' @param rgSet RGset (optional)
 #' @param mset Mset (optional)
 #' @param cores used cores, default = 4
+#' @param resultsDir directory with results
+#' @param method type of normalisation, defaults to BMIQ
+#' @param plotBMIQ should output be plotted? F by default
+#' @param arraytype type of array.
 #' @return Normalised beta matrix
 #' @export
 

@@ -14,10 +14,11 @@ preprocessDataSigMatrix(
   overwrite = FALSE,
   run.name = NULL,
   beta.subset.compatible = F,
-  meth = "Signal_A",
-  unmeth = "Signal_B",
+  Uname = "Signal_A",
+  Mname = "Signal_B",
   detPname = "Detection.Pval",
-  sep = "\\t"
+  sep = "\\t",
+  filter.loci = F
 )
 }
 \arguments{
@@ -39,13 +40,15 @@ preprocessDataSigMatrix(
 
 \item{beta.subset.compatible}{EPICv2 only, should EPIC v1/V2 compatible subset be provided?}
 
-\item{meth}{column name (grep) of methylated signal}
+\item{Uname}{column name (grep) of unmethylated signal}
 
-\item{unmeth}{column name (grep) of unmethylated signal}
+\item{Mname}{column name (grep) of methylated signal}
 
 \item{detPname}{detP name (grep)}
 
-\item{sep}{separator for index file, '\t' by default}
+\item{sep}{separator for index file, tab by default}
+
+\item{filter.loci}{should detP/other sites be filtered out?}
 }
 \value{
 preprocessed beta matrix and QC report

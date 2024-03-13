@@ -17,6 +17,8 @@
 #' @param find.files only selects those files specified in basename from a given folder. REQUIRES a pheno file with basename column, run.name, and sets by.dir to F (not applicable)
 #' @param run.name NULL by default, required for find.files (not using plate/batch names)
 #' @param beta.subset.compatible EPICv2 only, should EPIC v1/V2 compatible subset be provided?
+#' @param create.shiny should a shiny object for control/density visualisation be created? F by default, because this generates large objects.
+#' @param path_to_bad_sample_list If any samples should be excluded that have previously been identified as problematic, these can be provided here as a link to a csv file
 #' @return preprocessed beta matrix and QC report
 #' @export
 
