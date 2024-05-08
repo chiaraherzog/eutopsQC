@@ -5,7 +5,7 @@ Preprocessing pipeline for raw epigenetic data from raw IDAT (.idat) or signal i
 * `input`: input folder direction to raw data (idat) or .txt.gz file (signal intensity file)
 * `output`: folder where beta matrix should be stored
 * `report`: folder where the QC report should be generated
-* `array`: EPIC, mouse or other
+* `array`: EPIC, mouse or other. For EPIC version 2, use 'EPICv2'
 * `pheno`:
   - optional for .idat input; can point to .csv, .Rdata, .txt file. Important: REQUIRES column basename! each column should have multiple values (non-uniform) for QC
   - mandatory for signal intensity files
@@ -13,7 +13,7 @@ Preprocessing pipeline for raw epigenetic data from raw IDAT (.idat) or signal i
 * `cores`: number of core to use for ChAMP normalisation. 4 by default.
 * `overwrite`: if a beta matrix is present in the output directory already, overwrite = F prevents accidental overwriting.
 * `run.name`: provide run name
-* `beta.subset.compatible`: for EPIC version 2 only: should a version1/version2 compatible matrix be generated using the same rownames and probes?
+* `beta.subset.compatible`: for EPIC version 2 only: boolean - should a version1/version2 compatible matrix be generated using the same rownames and probes? 
 
 IDAT processing only:
 
