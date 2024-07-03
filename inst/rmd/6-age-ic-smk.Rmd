@@ -137,9 +137,9 @@ if(any(grepl("_BC11", rownames(beta_merged)))){
       ylab("cg16867657 methylation")
     
     ggplotly(plot)
-  } else {
-    tmp <- data.frame(smk = as.numeric(beta_merged["cg16867657",]), 
-               basename = colnames(beta_merged))
+    } else if("cg16867657" %in% rownames(beta)){
+        tmp <- data.frame(smk = as.numeric(beta["cg16867657",]), 
+               basename = colnames(beta))
     
     plot <- tmp |>
       ggplot(aes(x = as.factor(basename),
@@ -151,6 +151,8 @@ if(any(grepl("_BC11", rownames(beta_merged)))){
       ylab("cg16867657 methylation")
     
     ggplotly(plot)
+  } else {
+    cat("cg16867657 not in dataframe")
   }
 }
 ```
