@@ -326,19 +326,23 @@ preprocessDataSigMatrix <- function(input = "",
   cat('Creating RMarkdown Report...\n')
   rmarkdown::render(input = paste0(system.file("rmd", "SigMatrix", "index_SigMatrix.Rmd",
                                                package = "eutopsQC")),
-                    output_file = paste0(report, "index.html"))
+                    output_file = paste0(report, "index.html"),
+                    intermediates_dir = getwd())
 
   rmarkdown::render(input = paste0(system.file("rmd", "SigMatrix", "1-plate-summary_SigMatrix.Rmd",
                                               package = "eutopsQC")),
-                    output_file = paste0(report, "1-plate-summary.html"))
+                    output_file = paste0(report, "1-plate-summary.html"),
+                    intermediates_dir = getwd())
 
   rmarkdown::render(input = paste0(system.file("rmd", "SigMatrix", "2-qc_SigMatrix.Rmd",
                                                package = "eutopsQC")),
-                    output_file = paste0(report, "2-qc.html"))
+                    output_file = paste0(report, "2-qc.html"),
+                    intermediates_dir = getwd())
 
   rmarkdown::render(input = paste0(system.file("rmd", "SigMatrix", "3-beta-distributions_SigMatrix.Rmd",
                                                package = "eutopsQC")),
-                    output_file = paste0(report, "3-beta-distributions.html"))
+                    output_file = paste0(report, "3-beta-distributions.html"),
+                    intermediates_dir = getwd())
 
   if (!grepl("v2", array, ignore.case = T)){
     # note age, ic and smk indices calculated from beta
@@ -353,7 +357,8 @@ preprocessDataSigMatrix <- function(input = "",
 
     rmarkdown::render(input = paste0(system.file("rmd", "SigMatrix", "4-age-ic-qc_SigMatrix.Rmd",
                                                  package = "eutopsQC")),
-                      output_file = paste0(report, "4-age-ic-smk.html"))
+                      output_file = paste0(report, "4-age-ic-smk.html"),
+                      intermediates_dir = getwd())
 
   } else{
     # EPIC v2
@@ -370,14 +375,16 @@ preprocessDataSigMatrix <- function(input = "",
       beta <- beta_merged_compatible
       rmarkdown::render(input = paste0(system.file("rmd", "SigMatrix", "4-age-ic-qc_SigMatrix.Rmd",
                                                    package = "eutopsQC")),
-                        output_file = paste0(report, "4-age-ic-smk.html"))
+                        output_file = paste0(report, "4-age-ic-smk.html"),
+                        intermediates_dir = getwd())
     })
 
   }
 
   rmarkdown::render(input = paste0(system.file("rmd", "SigMatrix", "5-pca.Rmd",
                                                package = "eutopsQC")),
-                      output_file = paste0(report, "5-pca.html"))
+                      output_file = paste0(report, "5-pca.html"),
+                      intermediates_dir = getwd())
 
   cat('Session info:\n\n')
   print(sessionInfo())
