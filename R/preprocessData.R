@@ -11,14 +11,17 @@
 #' @param array Methylation array type, EPIC by default
 #' @param cores cores to be used for ChAMP normalisation. 4 by default
 #' @param pheno phenotypic file. NULL by default. If pheno file is provided, it must have a column named basename with identical names to IDAT files. File can be provided as Rdata, RDS, .txt or .csv. Each column will be included in the batch effect correction. Ensure that no column exists with entirely identical variables
-#' @param by.dir process by directory instead. FALSE by default. The result will not be different, but by.dir = T can be slower (for smaller projects), yet it is recommended for large projects.
+#' @param by.dir process by directory instead. FALSE by default. The result will not be different, but by.dir = T can be slower (for smaller projects), yet it is recommended for large projects. Please note for this to work appropriately this will need subdirectories; if not present, it will proceed with a warning and use the overarching folder.
 #' @param overwrite overwrite existing output folder. FALSE by default to prevent any accidental overwriting.
 #' @param save.rs save SNP (rs) probe values. FALSE by default.
+#' @param save.sex save methylation-estimated sex
 #' @param find.files only selects those files specified in basename from a given folder. REQUIRES a pheno file with basename column, run.name, and sets by.dir to F (not applicable)
 #' @param run.name NULL by default, required for find.files (not using plate/batch names)
 #' @param beta.subset.compatible EPICv2 only, should EPIC v1/V2 compatible subset be provided?
 #' @param create.shiny should a shiny object for control/density visualisation be created? F by default, because this generates large objects.
 #' @param path_to_bad_sample_list If any samples should be excluded that have previously been identified as problematic, these can be provided here as a link to a csv file
+#' @param remove.chrY remove chrY probes? default TRUE for backward compatibility
+#' @param generate.report automatically generate HTML report?
 #' @return preprocessed beta matrix and QC report
 #' @export
 
@@ -32,10 +35,13 @@ preprocessData <- function(input = "",
                            path_to_bad_sample_list = "",
                            overwrite = FALSE,
                            save.rs = FALSE,
+                           save.sex = FALSE,
                            create.shiny = F,
                            find.files = F,
                            run.name = NULL,
-                           beta.subset.compatible = F){
+                           beta.subset.compatible = F,
+                           remove.chrY = T,
+                           generate.report = T){
 
   # Install packages (if missing)
   eutopsQC::installBiocDependencies(eutopsQC::packageList)
@@ -136,6 +142,7 @@ preprocessData <- function(input = "",
   cat('Path to log file =',log,'\n')
   cat('Pheno present =', ifelse(is.null(pheno), "FALSE", "TRUE"), "\n")
   cat('By directory = ', ifelse(by.dir == FALSE, "FALSE", "TRUE"), "\n\n")
+
   if(find.files == T){
     cat('Note: You are using find.files function to select idat files from folders.\n')
   }
@@ -154,6 +161,15 @@ preprocessData <- function(input = "",
 
   plates <- list.dirs(input,
                       full.names = FALSE, recursive = F)
+
+  # Check if by.dir = T, subdirectories are present - if not, work around
+  if(by.dir == T){
+    if(length(plates) == 0){
+      warning("No subdirectories in plates, but by.dir function selected. Proceeding in a single run.")
+      plates <- basename(list.dirs(input))
+    }
+  }
+
 
   if(by.dir == F){ # keep entire folder as one "set"
     tmp <- stringr::str_split(input, "/", simplify = TRUE)
@@ -283,6 +299,13 @@ preprocessData <- function(input = "",
     Mset <- preprocessRaw(RGset)
     qc <- getQC(Mset)
     cat(' done\n')
+
+    # Save Sex (only if not mouse, otherwise will throw error)
+    if(save.sex == T & !grepl("mouse", array, ignore.case = T)){
+      gMset <- mapToGenome(Mset)
+      sex <- getSex(gMset)
+      save(sex, file = paste0(log, "/", plates[i], "_rs.Rdata"))
+    }
 
     # Extract Rho
     cat('Calculating rho...\n')
@@ -478,15 +501,23 @@ preprocessData <- function(input = "",
 
   # combine all CpGs to remove
   if (grepl("v2", array, ignore.case = T)){
-    rm_names <- unique(c(chrY_0_M_names_v2,non_CpG_names_v2,snp_names_v2,zhou_list_v2,failed_probes))
-    cat('Removing', length(chrY_0_M_names_v2),'chrY, chr0, chrM probes\n')
+    if(remove.chrY == T){
+      rm_names <- unique(c(chrY_0_M_names_v2,non_CpG_names_v2,snp_names_v2,zhou_list_v2,failed_probes))
+      cat('Removing', length(chrY_0_M_names_v2),'chrY, chr0, chrM probes\n')
+    } else {
+      rm_names <- unique(c(non_CpG_names_v2,snp_names_v2,zhou_list_v2,failed_probes))
+    }
     cat('Removing', length(non_CpG_names_v2),'non-CpG probes\n')
     cat('Removing', length(snp_names_v2),'SNP probes flagged previously on v1\n')
     cat('Removing', length(failed_probes),'failed probes (detP)\n')
     cat('Removing', length(zhou_list_v2),'remaining Zhou SNP probes on v2\n\n')
   } else {
-    rm_names <- unique(c(chrY_names,non_CpG_names,snp_names,zhou_list,failed_probes))
-    cat('Removing', length(chrY_names),'chrY probes\n')
+    if(remove.chrY == T){
+      rm_names <- unique(c(chrY_names,non_CpG_names_v2,snp_names_v2,zhou_list_v2,failed_probes))
+      cat('Removing', length(chrY_names),'chrY probes\n')
+    } else {
+      rm_names <- unique(c(non_CpG_names,snp_names,zhou_list,failed_probes))
+    }
     cat('Removing', length(non_CpG_names),'non-CpG probes\n')
     cat('Removing', length(snp_names),'SNP probes\n')
     cat('Removing', length(failed_probes),'failed probes (detP)\n')
@@ -582,8 +613,10 @@ preprocessData <- function(input = "",
       ncol(beta_merged),
       'samples\n\n')
 
+  if(beta.subset.compatible == T){
   # create a EPIC v1 v2 compatible subset of beta_merged
   beta_merged_compatible <- subset_versionshared_CpGs(beta_merged, array)
+  }
 
   # Save output
   cat('Begin save outputs...')
@@ -632,6 +665,10 @@ preprocessData <- function(input = "",
   pheno$rho <- numeric(length = nrow(pheno))
   pheno$rho <- rho$rho[match(pheno$basename, rownames(rho))]
 
+  if(save.sex == T){
+    pheno$estimated_sex <- as.character(sex[match(pheno$basename, rownames(sex)),][,3])
+  }
+
   # Load controls
   if(length(plates) == 1){
     load(paste(log,'/',plates,'_ctrl.Rdata',sep=''))
@@ -678,68 +715,18 @@ preprocessData <- function(input = "",
   save(rho, file = paste0(log, "/merged_rho.Rdata"))
   }
 
-  # Create a report
-  cat('Creating RMarkdown Report...\n')
-  file.copy(from = paste0(system.file("rmd", "_site.yml", package = "eutopsQC")),
-            to = report)
-  rmarkdown::render(input = paste0(system.file("rmd", "index.Rmd",
-                                               package = "eutopsQC")),
-                    output_file = paste0(report, "index.html", sep = ""))
-  rmarkdown::render(input = paste0(system.file("rmd", "1-plate-summary.Rmd",
-                                               package = "eutopsQC")),
-                    output_file = paste0(report, "1-plate-summary.html", sep = ""))
-  rmarkdown::render(input = paste0(system.file("rmd", "2-control-plots.Rmd", package = "eutopsQC")),
-                    output_file = paste0(report, "2-control-plots.html", sep = ""))
-  rmarkdown::render(input = paste0(system.file("rmd", "3-qc.Rmd", package = "eutopsQC")),
-                    output_file = paste0(report, "3-qc.html", sep = ""))
-  rmarkdown::render(input = paste0(system.file("rmd", "4-beta-distributions.Rmd", package = "eutopsQC")),
-                    output_file = paste0(report, "4-beta-distributions.html", sep = ""))
-  rmarkdown::render(input = paste0(system.file("rmd", "5-snr.Rmd", package = "eutopsQC")),
-                    output_file = paste0(report, "5-snr.html", sep = ""))
 
-  if (!grepl("v2", array, ignore.case = T)){
-    # note age, ic and smk indices calculated from beta_merged
 
-    if(exists("pheno") & array != "mouse"){
-      out <- epidish(beta.m = beta_merged,
-                     ref.m = centEpiFibIC.m,
-                     method = "RPC")$estF
-      ind <- match(pheno$basename, rownames(out))
-      pheno$ic <- out[ind,3]
-    }
-
-    rmarkdown::render(input = paste0(system.file("rmd", "6-age-ic-smk.Rmd", package = "eutopsQC")),
-                      output_file = paste0(report, "6-age-ic-smk.html", sep = ""))
-
-  } else{
-    # EPIC v2
-    # age, ic and smk indices calculated from beta_merged_compatible (based on v1 IDs)
-    # suggest to add retrained, v1.v2 compatible age index to WID clocks packages
-
-    if(exists("pheno")){
-      out <- epidish(beta.m = beta_merged_compatible,
-                     ref.m = centEpiFibIC.m,
-                     method = "RPC")$estF
-      ind <- match(pheno$basename, rownames(out))
-      pheno$ic <- out[ind,3]
-    }
-
-    local({
-      beta_merged <- beta_merged_compatible
-      rmarkdown::render(input = paste0(system.file("rmd", "6-age-ic-smk.Rmd", package = "eutopsQC")),
-                        output_file = paste0(report, "6-age-ic-smk.html", sep = ""))
-    })
-
-  }
-
-  if(exists("pheno")){
-    rmarkdown::render(input = paste0(system.file("rmd", "7-dimensred.Rmd", package = "eutopsQC")),
-                      output_file = paste0(report, "7-dimensred.html", sep = ""))
+  if(generate.report == T){
+    generateReport(report = report,
+                   pheno = pheno,
+                   beta_merged = beta_merged,
+                   array = array)
+  } else {
+    save(pheno, file = paste0(report, file = 'pheno_postQC.Rdata'))
   }
 
 
-
-  # Save snp
   if(!grepl("mouse", array, ignore.case = T) && save.rs==T){
     if(length(plates) == 1){
       load(paste(log,'/',plates,'_rs.Rdata',sep=''))

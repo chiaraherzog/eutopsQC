@@ -1,6 +1,6 @@
 Package: eutopsQC
 Title: EUTOPS preprocessing and quality control pipeline
-Version: 1.2
+Version: 1.2.1
 Authors@R: 
     person("Chiara", "Herzog", , "chiara.herzog@uibk.ac.at", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-1572-498X"))
@@ -10,7 +10,7 @@ Encoding: UTF-8
 Roxygen: list(
     markdown = TRUE,
     roclets = c("collate", "namespace", "rd", "roxyglobals::global_roclet"))
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.2
 Depends: 
     R (>= 2.10)
 LazyData: true

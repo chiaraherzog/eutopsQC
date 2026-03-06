@@ -14,11 +14,14 @@ Preprocessing pipeline for raw epigenetic data from raw IDAT (.idat) or signal i
 * `overwrite`: if a beta matrix is present in the output directory already, overwrite = F prevents accidental overwriting.
 * `run.name`: provide run name
 * `beta.subset.compatible`: for EPIC version 2 only: boolean - should a version1/version2 compatible matrix be generated using the same rownames and probes? 
+* `generate.report`: should an automatic QC report be generated? TRUE by default.
+* `remove.chrY`: should chrY probes be removed? TRUE by default (removing noise)
 
 IDAT processing only:
 
-* `by.dir`: process input by directory (instead of all at once) - FALSE by default, but recommended for larger projects (>10 beadchips; depending on available RAM)
+* `by.dir`: process input by directory (instead of all at once) - FALSE by default, but recommended for larger projects (>10 beadchips; depending on available RAM). Please note for this to work appropriately this will need subdirectories; if not present, it will proceed with a warning and use the overarching folder.
 * `save.rs`: extract SNP (rs) probe values. FALSE by default.
+* `save.sex`: save estimated sex chromosomes. FALSE by default
 * find.files: only selects those files specified in basename from a given folder. REQUIRES a pheno file with basename column, run.name, and sets by.dir to F (not applicable)
 
 Signal matrix processing only:

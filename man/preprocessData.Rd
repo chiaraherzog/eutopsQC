@@ -15,10 +15,13 @@ preprocessData(
   path_to_bad_sample_list = "",
   overwrite = FALSE,
   save.rs = FALSE,
+  save.sex = FALSE,
   create.shiny = F,
   find.files = F,
   run.name = NULL,
-  beta.subset.compatible = F
+  beta.subset.compatible = F,
+  remove.chrY = T,
+  generate.report = T
 )
 }
 \arguments{
@@ -34,13 +37,15 @@ preprocessData(
 
 \item{cores}{cores to be used for ChAMP normalisation. 4 by default}
 
-\item{by.dir}{process by directory instead. FALSE by default. The result will not be different, but by.dir = T can be slower (for smaller projects), yet it is recommended for large projects.}
+\item{by.dir}{process by directory instead. FALSE by default. The result will not be different, but by.dir = T can be slower (for smaller projects), yet it is recommended for large projects. Please note for this to work appropriately this will need subdirectories; if not present, it will proceed with a warning and use the overarching folder.}
 
 \item{path_to_bad_sample_list}{If any samples should be excluded that have previously been identified as problematic, these can be provided here as a link to a csv file}
 
 \item{overwrite}{overwrite existing output folder. FALSE by default to prevent any accidental overwriting.}
 
 \item{save.rs}{save SNP (rs) probe values. FALSE by default.}
+
+\item{save.sex}{save methylation-estimated sex}
 
 \item{create.shiny}{should a shiny object for control/density visualisation be created? F by default, because this generates large objects.}
 
@@ -49,6 +54,10 @@ preprocessData(
 \item{run.name}{NULL by default, required for find.files (not using plate/batch names)}
 
 \item{beta.subset.compatible}{EPICv2 only, should EPIC v1/V2 compatible subset be provided?}
+
+\item{remove.chrY}{remove chrY probes? default TRUE for backward compatibility}
+
+\item{generate.report}{automatically generate HTML report?}
 }
 \value{
 preprocessed beta matrix and QC report
