@@ -720,6 +720,7 @@ preprocessData <- function(input = "",
   if(generate.report == T){
     generateReport(report = report,
                    pheno = pheno,
+                   log = log,
                    beta_merged = beta_merged,
                    array = array)
   } else {

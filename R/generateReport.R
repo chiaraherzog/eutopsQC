@@ -9,8 +9,36 @@
 #' @export
 generateReport <- function(report = reportDir,
                            array = arrayInput,
+                           log = logDir,
                            pheno = NULL,
                            beta_merged = betaInput){
+
+  require(EpiDISH)
+
+  # Loading ctrls
+  f <- list.files(log, full.names = T)
+  ctrlnames <- f[grepl("_ctrl", f)]
+  if(length(ctrlnames) == 1){
+    load(ctrlnames)
+  } else {
+    for(i in ctrlnames){
+      load(i)
+    }
+  }
+
+  # plates
+  plates <- unique(gsub("_ctrl.Rdata", "", basename(ctrlnames)))
+
+  # rho
+  rhonames <- f[grepl("_rho", f)]
+  if(length(rhonames) == 1){
+    load(rhonames)
+  } else {
+    for(i in rhonames){
+      load(i)
+    }
+  }
+
   cat('Creating RMarkdown Report...\n')
   file.copy(from = paste0(system.file("rmd", "_site.yml", package = "eutopsQC")),
             to = report)
