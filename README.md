@@ -34,8 +34,8 @@ Signal matrix processing only:
 ## Installation
 
 ```r
-if (!requireNamespace("devtools", quietly = TRUE))
-    install.packages("devtools")
+if (!requireNamespace("remotes", quietly = TRUE))
+    install.packages("remotes")
 
-devtools::install_github("chiaraherzog/eutopsQC")
+remotes::install_github("chiaraherzog/eutopsQC")
 ```

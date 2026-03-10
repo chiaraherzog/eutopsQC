@@ -232,11 +232,11 @@ preprocessData <- function(input = "",
 
       # Download annotation for mouse array if not available
       if(!require(IlluminaMouseMethylationanno.12.v1.mm10)){
-        devtools::install_github("chiaraherzog/IlluminaMouseMethylationanno.12.v1.mm10")
+        remotes::install_github("chiaraherzog/IlluminaMouseMethylationanno.12.v1.mm10")
       }
       # Download manifest for mouse array if not available
       if(!require(IlluminaMouseMethylationmanifest)){
-        devtools::install_github("chiaraherzog/IlluminaMouseMethylationmanifest")
+        remotes::install_github("chiaraherzog/IlluminaMouseMethylationmanifest")
       }
 
       # Load up packages
@@ -252,12 +252,12 @@ preprocessData <- function(input = "",
 
       # Download manifest if not available
       if(!require(IlluminaHumanMethylationEPICv2manifest)){
-        devtools::install_github("jokergoo/IlluminaHumanMethylationEPICv2manifest")
+        remotes::install_github("jokergoo/IlluminaHumanMethylationEPICv2manifest")
       }
 
       # Download annotation if not available
       if(!require(IlluminaHumanMethylationEPICv2anno.20a1.hg38)){
-        devtools::install_github("jokergoo/IlluminaHumanMethylationEPICv2anno.20a1.hg38")
+        remotes::install_github("jokergoo/IlluminaHumanMethylationEPICv2anno.20a1.hg38")
       }
 
       suppressPackageStartupMessages(library(IlluminaHumanMethylationEPICv2manifest))

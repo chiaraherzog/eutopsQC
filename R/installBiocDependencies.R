@@ -24,13 +24,13 @@ installBiocDependencies <- function(packageList){
 
     if (!requireNamespace("WIDclocks", quietly = TRUE)){
       cat("Installing package WIDclocks from github")
-      devtools::install_github("chiaraherzog/WIDclocks", quiet = TRUE, upgrade = "never")
+      remotes::install_github("chiaraherzog/WIDclocks", quiet = TRUE, upgrade = "never")
       cat("... done\n")
     }
 
   if (!requireNamespace("ewastools", quietly = TRUE)){
     cat("Installing package ewastools from github")
-    devtools::install_github("hhhh5/ewastools", quiet = TRUE, upgrade = "never")
+    remotes::install_github("hhhh5/ewastools", quiet = TRUE, upgrade = "never")
     cat("... done\n")
   }
 
