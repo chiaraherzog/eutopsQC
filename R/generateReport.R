@@ -15,47 +15,38 @@ generateReport <- function(report = reportDir,
 
   require(EpiDISH)
 
-  # Loading ctrls
-  f <- list.files(log, full.names = T)
-  ctrlnames <- f[grepl("_ctrl", f)]
-  if(length(ctrlnames) == 1){
-    load(ctrlnames)
-  } else {
-    for(i in ctrlnames){
-      load(i)
-    }
+  # Normalize report path for rmarkdown render, otherwise fails
+  report_dir <- normalizePath(report, mustWork = FALSE)
+
+  # Helper function
+  render_report <- function(rmd, output_file) {
+    rmarkdown::render(
+      input         = system.file("rmd", rmd, package = "eutopsQC"),
+      output_file   = output_file,
+      output_dir    = report_dir,
+      knit_root_dir = getwd()
+    )
   }
 
-  # plates
+  # Loading log files
+  f <- list.files(log, full.names = T, pattern = "*.Rdata")
+  for (i in f){
+    load(i)
+  }
+
+  # Get plate name
+  ctrlnames <- f[grepl("_ctrl", f)]
   plates <- unique(gsub("_ctrl.Rdata", "", basename(ctrlnames)))
 
-  # rho
-  rhonames <- f[grepl("_rho", f)]
-  if(length(rhonames) == 1){
-    load(rhonames)
-  } else {
-    for(i in rhonames){
-      load(i)
-    }
-  }
-
   cat('Creating RMarkdown Report...\n')
-  file.copy(from = paste0(system.file("rmd", "_site.yml", package = "eutopsQC")),
-            to = report)
-  rmarkdown::render(input = paste0(system.file("rmd", "index.Rmd",
-                                               package = "eutopsQC")),
-                    output_file = paste0(report, "index.html", sep = ""))
-  rmarkdown::render(input = paste0(system.file("rmd", "1-plate-summary.Rmd",
-                                               package = "eutopsQC")),
-                    output_file = paste0(report, "1-plate-summary.html", sep = ""))
-  rmarkdown::render(input = paste0(system.file("rmd", "2-control-plots.Rmd", package = "eutopsQC")),
-                    output_file = paste0(report, "2-control-plots.html", sep = ""))
-  rmarkdown::render(input = paste0(system.file("rmd", "3-qc.Rmd", package = "eutopsQC")),
-                    output_file = paste0(report, "3-qc.html", sep = ""))
-  rmarkdown::render(input = paste0(system.file("rmd", "4-beta-distributions.Rmd", package = "eutopsQC")),
-                    output_file = paste0(report, "4-beta-distributions.html", sep = ""))
-  rmarkdown::render(input = paste0(system.file("rmd", "5-snr.Rmd", package = "eutopsQC")),
-                    output_file = paste0(report, "5-snr.html", sep = ""))
+  file.copy(from = system.file("rmd", "_site.yml", package = "eutopsQC"),
+            to = report_dir)
+  render_report("index.Rmd",                 "index.html")
+  render_report("1-plate-summary.Rmd",       "1-plate-summary.html")
+  render_report("2-control-plots.Rmd",       "2-control-plots.html")
+  render_report("3-qc.Rmd",                  "3-qc.html")
+  render_report("4-beta-distributions.Rmd",  "4-beta-distributions.html")
+  render_report("5-snr.Rmd",                 "5-snr.html")
 
   if (!grepl("v2", array, ignore.case = T)){
     # note age, ic and smk indices calculated from beta_merged
@@ -68,8 +59,7 @@ generateReport <- function(report = reportDir,
       pheno$ic <- out[ind,3]
     }
 
-    rmarkdown::render(input = paste0(system.file("rmd", "6-age-ic-smk.Rmd", package = "eutopsQC")),
-                      output_file = paste0(report, "6-age-ic-smk.html", sep = ""))
+    render_report("6-age-ic-smk.Rmd", "6-age-ic-smk.html")
 
   } else{
     # EPIC v2
@@ -86,17 +76,14 @@ generateReport <- function(report = reportDir,
 
     local({
       beta_merged <- beta_merged_compatible
-      rmarkdown::render(input = paste0(system.file("rmd", "6-age-ic-smk.Rmd", package = "eutopsQC")),
-                        output_file = paste0(report, "6-age-ic-smk.html", sep = ""))
+      render_report("6-age-ic-smk.Rmd", "6-age-ic-smk.html")
     })
 
   }
 
   if(exists("pheno")){
-    rmarkdown::render(input = paste0(system.file("rmd", "7-dimensred.Rmd", package = "eutopsQC")),
-                      output_file = paste0(report, "7-dimensred.html", sep = ""))
-
-    save(pheno, file = paste0(report, file = 'pheno_postQC.Rdata'))
+    render_report("7-dimensred.Rmd", "7-dimensred.html")
+    save(pheno, file = paste0(report_dir, "/pheno_postQC.Rdata"))
   }
 
   }
